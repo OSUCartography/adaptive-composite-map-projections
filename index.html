@@ -1,0 +1,260 @@
+<html>
+	<head>
+		<!-- expires immediately -->
+		<meta charset="utf-8" />
+
+		<link rel="icon" href="http://cartography.oregonstate.edu/favicon.ico"  type="image/x-icon" />
+		<link rel="shortcut icon" href="http://cartography.oregonstate.edu/favicon.ico" type="image/x-icon" />
+		<link rel="apple-touch-icon" href= "http://cartography.oregonstate.edu/apple-touch-icon.png" />
+
+		<!-- stop doubletap from zooming, and let the multitouch gestures work with Hammer.js. -->
+		<meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1" />
+
+		<title>Adaptive Composite Map Projections - Cartography and Geovisualization Group, Oregon State University</title>
+
+		<!--Google font directory CSS link to embed the font-->
+		<link href='http://fonts.googleapis.com/css?family=Open+Sans:400italic,400,300,600&subset=latin' rel='stylesheet' type='text/css'>
+
+		<script type="text/javascript" src="lib/hammer.min.js"></script>
+		<script type="text/javascript" src="lib/modestmaps/modestmaps.js"></script>
+		<script type="text/javascript" src="lib/wax.mm.min.js"></script>
+		<script type="text/javascript" src="lib/stats.min.js"></script>
+
+		<script type="text/javascript" src="AdaptiveCompositeMap.js"></script>
+		<script type="text/javascript" src="MapContent.js"></script>
+
+		<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" />
+		<script src="http://code.jquery.com/jquery-1.9.1.js"></script>
+		<script src="http://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
+
+		<!-- WebGL utilities -->
+		<script type="text/javascript" src="lib/J3DI.js"></script>
+		<script type="text/javascript" src="lib/J3DIMath.js"></script>
+
+		<!-- WebGL debugging -->
+		<!--
+		<script type="text/javascript" src="http://benvanik.github.com/WebGL-Inspector/core/embed.js"></script>
+		<script src="https://www.khronos.org/registry/webgl/sdk/debug/webgl-debug.js"></script>
+		-->
+
+		<link rel="stylesheet" href="css/AdaptiveMap.css">
+		<script type="text/javascript" src="UI.js"></script>
+
+	</head>
+	<body>
+		<div id ="logoContainer">
+			<a href="http://cartography.oregonstate.edu/"> <img id="headerImg" src="http://cartography.oregonstate.edu/rw_common/images/Logo-short.png" width="311" height="79" alt="Site logo"/> </a>
+		</div>
+		<div id="headerContainer">
+			<a href="http://cartography.oregonstate.edu/ScaleAdaptiveWebMapProjections.html"><h1>Adaptive Composite Map Projections</h1></a>
+			<div>
+				A recent version of Firefox or Google Chrome is required to view this interactive map with adaptive composite projections.
+			</div>
+		</div>
+
+		<div id="container">
+			<div id="map-and-zoom-slider">
+				<div id="zoom-Slider-Container">
+					<div id="zoom-slider"></div>
+				</div>
+				<div id="resizable_map_container">
+					<div class="map" id="adaptiveMap"></div>
+					<div class="map" id="slippyMap"></div>
+				</div>
+
+			</div>
+
+			<div id="tabs">
+				<ul>
+					<li>
+						<a href="#tabs-0">Info</a>
+					</li>
+					<li>
+						<a href="#tabs-1">Map</a>
+					</li>
+					<li>
+						<a href="#tabs-2">Projection Diagram</a>
+					</li>
+					<li>
+						<a href="#tabs-3">Settings</a>
+					</li>
+					<li>
+						<a href="#tabs-4">Debug</a>
+					</li>
+					<li>
+						<a href="#tabs-5">About</a>
+					</li>
+
+				</ul>
+				<div id="tabs-0">
+					<div id="infoText"></div>
+					<div id="textMouse"></div>
+				</div>
+				<div id="tabs-1">
+					<div id="settings">
+
+						<b>Projection for World Map</b>
+						<br>
+						<select id="projectionSelectionMenu">
+							<option value="Hammer">Hammer (Equal Area)</option>
+							<option value="PseudoCylindricalEqualArea">Pseudocylindrical (Equal Area)</option>
+							<option value="Wagner7">Wagner VII (Equal Area)</option>
+							<option value="QuarticAuthalic">Quartic Authalic (Equal Area)</option>
+							<option value="CylindricalEqualArea"> Cylindrical Equal Area (Equal Area) </option>
+							<option value="NaturalEarth">Natural Earth</option>
+							<option value="Robinson">Robinson</option>
+							<!--
+							<option value="Mollweide">Mollweide (Equal Area Only for World View)</option>
+							<option value="Eckert4">Eckert IV (Equal Area Only for World View)</option>
+							-->
+							<option value="Geographic">Plate Carr&eacute;e (Geographic)</option>
+							<option value="Sinusoidal"> Sinusoidal (Equal Area Only for World View)</option>
+							<option value="Canters1"> Canters Modified Sinusoidal 1 (Equal Area Only for World View) </option>
+							<option value="Canters2"> Canters Modified Sinusoidal 2 (Equal Area Only for World View) </option>
+						</select>
+						<br>
+						<b>Map</b>
+						<select id="mapSelectionMenu">
+							<!--<option>Silhouette</option>-->
+							<option>Natural Earth Raster</option>
+							<option>Modeled Winds Video (NASA GSFC, Nov. 2007)</option>
+							<option>Surface Temperatures Video (The Dark Sky Company, Nov. 1 to Nov. 7 2013)</option>
+							<option>Indian Ocean Tsunami Model Video (NOAA Center for Tsunami Research, USGS)</option>
+							<option>Graticule</option>
+						</select>
+						<br>
+						<br />
+						<input type="checkbox" id="rotateSmallScaleCheckbox" value="rotateSmallScaleCheckbox" />
+						<label for="rotateSmallScaleCheckbox">Rotate poles for world maps</label>
+						<br />
+						<br />
+						<input type="checkbox" id="snapEquatorCheckbox" value="snapEquatorCheckbox" checked  />
+						<label for="snapEquatorCheckbox">Snap to straight equator</label>
+					</div>
+					<!-- settings -->
+				</div>
+				<div id="tabs-2">
+					<div id="diagramText">
+						Horizontal axis: map zoom factor.<br/
+						Vertical axis: central latitude of map.<br/>
+						Click in the diagram or drag the button to change scale and central latitude.
+						</div>
+						<div id="diagram"></div>
+						</div>
+						<div id="tabs-3">
+						<div id ="projection-settings">
+						<b> Large-Scale Projections for Polar Areas</b>
+						<br>
+						Azimuthal projection for poles from
+						<div id="polarUpperLat-slider"></div>
+						<div id="polarUpperLat-text"></div>
+						<br>
+						with a transition zone from
+						<div id="polarLowerLat-slider"></div>
+						<div id="polarLowerLat-text"></div>
+						<br>
+						<div>
+						<b> Scale limits for combining projections</b>
+						<br>
+						<div id="scale-limits-slider"></div>
+						<div id="scale-limits-text"></div>
+						</div>
+						<div>
+						<br>
+						<b> Position of standard parallels for conic projection</b>
+						<br>
+						<div id="std-parallels-slider"></div>
+						<div id="std-parallels-text"></div>
+						</div>
+						<div>
+						<br>
+						<b> Latitude limit between clyindrical and conic projection at large scales </b>
+						<br>
+						Use cylindrical projection between the equator and
+						<br>
+						<div id="cylindricalLowerLat-slider"></div>
+						<div id="cylindricalLowerLat-text"></div>
+						with a transition zone up to this latitude
+						<br>
+						<div id="cylindricalUpperLat-slider"></div>
+						<div id="cylindricalUpperLat-text"></div>
+					</div>
+				</div><!-- projection-settings -->
+			</div>
+
+			<div id="tabs-4">
+				<input type="checkbox" id="changeScaleCheckbox" value="zoom" checked />
+				<label for="changeScaleCheckbox">Zoom Map</label>
+				<br />
+				<br />
+				<input type="checkbox" id="drawOverlayCheckbox" value="drawOverlayCheckbox" />
+				<label for="drawOverlayCheckbox">Show map overlay</label>
+				<br />
+				<br />
+				<div id="FPS"></div>
+				<br />
+				<br />
+				<button id="lostContextButton">
+					Simulate Lost WebGL Context
+				</button>
+				<br />
+				<br />
+				<button id="email">
+					Send Email with Problem Report
+				</button>
+			</div>
+			<div id="tabs-5">
+				<h2>About Adaptive Composite Map Projections</h2>
+				<p>
+					Adaptive Composite Map Projections were developed by Bernhard Jenny, <a href="http://cartography.oregonstate.edu">Cartography and Geovisualization Group</a> at Oregon State University.
+				</p>
+				<p>
+					For more information refer to
+					<br>
+					Jenny, B. (2012). <a href="http://cartography.oregonstate.edu/pdf/2012_Jenny_AdaptiveCompositeMapProjections.pdf">Adaptive composite map projections</a>.
+					<br>
+					IEEE Transactions on Visualization and Computer Graphics (Proceedings Scientific Visualization / Information Visualization 2012), 18-12, p. 2575–2582.
+				</p>
+				<p>
+					It is suggested, though not required, that you cite the above article when using Adaptive Composite Map Projections for research applications.
+				</p>
+				<p>
+					Permission to use, copy, modify, and distribute Adaptive Composite Map Projections, this software and its documentation for
+					commercial, educational, research and any other purposes, without fee, and without a written agreement is hereby granted.
+					Anyone can incorporate Adaptive Composite Map Projections in their software or web page without excplicit permission
+					by Oregon State University.
+				</p>
+				<p>
+					The software program and documentation are supplied "as is", without any accompanying services from the University.
+					The University does not warrant that the operation of the program will be uninterrupted or error-free.
+					The end-user understands that the program was developed for research purposes and is advised not to rely exclusively
+					on the program for any reason.
+				</p>
+				<p>
+					IN NO EVENT SHALL OREGON STATE UNIVERSITY BE LIABLE TO ANY PARTY FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL
+					DAMAGES, INCLUDING LOST PROFITS, ARISING OUT OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF THE OREGON STATE
+					UNIVERSITY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. OREGON STATE  UNIVERSITY SPECIFICALLY DISCLAIMS ANY WARRANTIES,
+					INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE AND ANY STATUTORY
+					WARRANTY OF NON-INFRINGEMENT. THE SOFTWARE PROVIDED HEREUNDER IS ON AN "AS IS" BASIS, AND OREGON STATE UNIVERSITY HAS NO
+					OBLIGATIONS TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
+				</p>
+			</div>
+		</div>
+		<video id="video1" class="video" controls muted loop preload="auto">
+			<source src="data_layers/video/wind.mp4" type="video/mp4">
+			<source src="data_layers/video/wind.ogg" type="video/ogg">
+			Your browser doesn't support HTML5 video in MP4 with H.264.
+		</video>
+		<video id="video2" class="video" controls muted loop preload="auto">
+			<source src="data_layers/video/temp.mp4" type="video/mp4">
+			<source src="data_layers/video/temp.ogg" type="video/ogg">
+			Your browser doesn't support HTML5 video in MP4 with H.264.
+		</video>
+		<video id="video3" class="video" controls muted loop preload="auto">
+			<source src="data_layers/video/tsunami.mp4" type="video/mp4">
+			<source src="data_layers/video/tsunami.ogg" type="video/ogg">
+			Your browser doesn't support HTML5 video in MP4 with H.264.
+		</video>
+		</div><!-- container -->
+	</body>
+</html>

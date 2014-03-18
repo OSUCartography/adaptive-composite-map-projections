@@ -1,0 +1,43 @@
+<project name="AdaptiveCompositeMapProjection" default="build.dev">
+
+	<import file="buildr/buildr.xml" />
+	<property name="src.dir" value="src/" />
+	<property name="build.dir" value="./" />
+	<tstamp>
+		<format property="build.time" pattern="MMMM d, yyyy hh:mm:ss" locale="en, US" />
+	</tstamp>
+	<target name="init">
+		<!--
+		<mkdir dir="${build.dir}" />-
+		-->
+	</target>
+	<target name="clean">
+		<!--
+		<delete dir="${build.dir}" />
+		-->
+		<delete file="${build.dir}/AdaptiveCompositeMap.js" />
+	</target>
+	<target name="concatenate">
+		<concat destfile="${build.dir}/AdaptiveCompositeMap.js" fixlastline="yes" eol="lf">
+			<header>/* Build Time: ${build.time} */</header>
+			<fileset dir="${src.dir}" includes="**/*.js" />
+		</concat>
+	</target>
+	<target name="validate">
+		<jshint>
+			<fileset dir="${build.dir}" includes="*.js" />
+		</jshint>
+	</target>
+	<target name="minify">
+		<closure outputdir="${build.dir}" compilation-level="SIMPLE_OPTIMIZATIONS">
+			<fileset dir="${build.dir}" includes="*.js" />
+		</closure>
+	</target>
+	<target name="copyshaders">
+		<copy todir="shader">
+			<fileset dir="src/shader"/>
+		</copy>
+	</target>
+	<target name="build.dev" depends ="clean, init, concatenate, copyshaders"></target>
+
+</project>

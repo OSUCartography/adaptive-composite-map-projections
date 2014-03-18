@@ -1,0 +1,165 @@
+body {
+	background-color: #eee;
+	font: 11px 'Open Sans', sans-serif;
+	margin: 0px;
+}
+
+#logoContainer {
+	margin-left: 20px;
+	margin-top: 20px;
+	float: left;
+}
+
+#headerContainer {
+	float: left;
+	margin-left: 40px;
+	margin-top: 20px;
+	margin-bottom: 20px;
+}
+
+a {
+	color: #006699;
+	text-decoration: none;
+}
+
+a:visited {
+	color: #006699;
+}
+
+a:hover {
+	color: #DA5520;
+}
+
+a:active {
+	color: #DA5520;
+}
+
+/* Prevent Bootstrap buttons inheriting link colours */
+a:visited.btn {
+	color: #333;
+}
+h1 {
+	color: rgb(84, 84, 84);
+	font-family: 'Open Sans', sans-serif;
+	font-size: 26px;
+	font-weight: 600;
+	line-height: 28px;
+}
+
+#headerImg {
+
+}
+
+#container {
+	clear: both;
+}
+
+#map-and-zoom-slider {
+	position: relative;
+}
+
+.map {
+	width: 100%;
+	height: 500px;
+	background-color: white;
+}
+
+#resizable_map_container {
+}
+
+#adaptiveMap {
+}
+
+#slippyMap {
+	position: absolute;
+	left: 0;
+	top: 0;
+	visibility: hidden;
+}
+
+#zoom-Slider-Container {
+	position: absolute;
+	top: 0;
+	right: 0;
+	z-index: 10;
+}
+#zoom-slider {
+	margin: 15px;
+	height: 200px;
+}
+
+#tabs {
+	clear: both;
+}
+
+#textMouse {
+}
+
+#settings {
+	padding-left: 20px;
+}
+
+#projection-settings {
+	padding-left: 20px;
+}
+
+#diagram {
+	position: relative;
+}
+
+canvas {
+}
+
+#video1,#video2,#video3 {
+	display: none;
+}
+
+#diagramText {
+	padding-top: 1.5em;
+	padding-bottom: 0.5em;
+}
+
+#std-parallels-slider {
+	margin-top: 10px;
+	margin-left: 10px;
+	width: 200px;
+}
+#cylindricalUpperLat-slider {
+	margin-top: 10px;
+	margin-left: 10px;
+	width: 200px;
+}
+#cylindricalLowerLat-slider {
+	margin-top: 10px;
+	margin-left: 10px;
+	width: 200px;
+}
+#polarUpperLat-slider {
+	margin-top: 10px;
+	margin-left: 10px;
+	width: 200px;
+}
+#polarLowerLat-slider {
+	margin-top: 10px;
+	margin-left: 10px;
+	width: 200px;
+}
+#scale-limits-slider {
+	margin-top: 10px;
+	margin-left: 10px;
+	width: 400px;
+}
+#mapSelectionMenu {
+	margin-top: 10px;
+	margin-bottom: 10px;
+}
+#animate {
+	width: 80px;
+	margin-top: 10px;
+	margin-bottom: 10px;
+}
+#stopAnimate {
+	width: 80px;
+	margin-top: 10px;
+	margin-bottom: 10px;
+}
