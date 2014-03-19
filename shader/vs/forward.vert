@@ -35,6 +35,7 @@ uniform float cellsize;
 uniform float projectionID;
 
 // projections to mix and weight for the mix
+// FIXME should be integers
 uniform float mix1ProjectionID;
 uniform float mix2ProjectionID;
 uniform float mixWeight;
