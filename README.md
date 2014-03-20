@@ -57,11 +57,11 @@ The constructor of TransformedLambertAzimuthal takes three paramaters that defin
 ### ProjectionFactory in /projections/Projection.js
 Projection.js contains a ProjectionFactory object that creates a projection based on the current user settings and the canvas size.
 
-** Note: This object contains the entire logic, which is under ongoing development. As such, the code is even messier than the rest and also poorly documented.**
+**Note: This object contains the map projection logic, which is under ongoing development. As such, the code is even messier than the rest and also poorly documented.**
 
-The factory method in ProjectionFactory is create(). The parameter for this function is a configuration object with a bunch of parameters. Parameters are accessed with conf.parameterName. And no, this code is not documented - sorry. This is where the mess is. It is urgent for us to fix this conf object to make it clearer to understand.
+The factory method in ProjectionFactory is create(). The parameter for this function is a configuration object with a bunch of parameters. Parameters are accessed with conf.parameterName. This code is not documented - sorry. This is where the mess is. It is urgent for us to fix this conf object to make it clearer to understand.
 
-The create() function contains a set of private functions. The private functions initialize projections for certain cases, for example, getMediumScaleProjection() returns a Lambert azimuthal used for maps showing continents.
+The create() function contains a set of private functions. The private functions initialize projections for the current scale factor, aspect ratio, etc. For example, getMediumScaleProjection() returns a Lambert azimuthal used for maps showing continents.
 
 The private create() function inside ProjectionFactory.create() contains the main branch. It is where various private functions are called, mainly based on the current scale. It is best to visualize the interactive projection diagram on the website in parallel for a better understanding. The many if statements start from the right side of the diagram (largest scale, that is, Mercator for web maps).
 
@@ -104,9 +104,9 @@ This is an oblique Lambert azimuthal with the central latitude set to the map ce
 This creates either a transformed Lambert azimuthal projection (see  /projections/TransformedLambertAzimuthal.js above) or a mix of two projection (see /projections/WeightedProjectionMix.js above).
 
 ## Zoom Factor
-Projections are selected based on a zoom factor (and the aspect ratio of the map). This zoom factor is independent of the current scale of the map. A world map covering the entire screen uses a the same map projection as a a world map covering a fraction of the screen. The scale for these two maps is clearly different, but the zoom factor is identical. A map has a zoom factor of 1 if its central meridian vertically fills the available canvas space. In other words, at zoom factor 1, the length of central meridian is identical to the height of the canvas. A zoom factor of 2 means that half of central meridian is visible.
+Projections are selected based on the current zoom factor (and the aspect ratio of the map). This zoom factor is independent of the current scale of the map. The canvas of a world map covering the entire screen uses the same map projection as a a world map with a canvas covering a fraction of the screen. The scale for these two maps is clearly different, but the zoom factor is identical, because both maps vertically fill their canvas space. A map has a zoom factor of 1 if its central meridian vertically fills the available canvas space. In other words, at zoom factor 1, the length of the central meridian is identical to the height of the canvas. A zoom factor of 2 means that half of central meridian is visible.
 
-A zoom factor of 1 only guarantees that the entire central meridian is visible. The left and right sections of a graticule might might be invisible if the canvas is relatively narrow. Also, if the Wagner VII projection is used for world maps, not the entire graticule is visible, because for this projection the central meridian is shorter than the maximum vertical extent of the graticule.
+A zoom factor of 1 only guarantees that the entire central meridian is visible. The left and right sections of a graticule can be invisible if the canvas is relatively narrow. Also, if, for example, the Wagner VII projection is used for world maps, not the entire graticule is visible at a zoom factor of 1, because for this projection the central meridian is shorter than the maximum vertical extent of the graticule.
 
 
 
