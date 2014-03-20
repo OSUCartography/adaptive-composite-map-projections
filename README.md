@@ -1,9 +1,11 @@
 Adaptive Composite Map Projections
 ==================================
 
-Example at http://cartography.oregonstate.edu/demos/AdaptiveCompositeMapProjections/
+Authors: [Cartography and Geovisualization Group, Oregon State University](http://cartography.oregonstate.edu)
 
-More information at http://cartography.oregonstate.edu/ScaleAdaptiveWebMapProjections.html
+[Example](http://cartography.oregonstate.edu/demos/AdaptiveCompositeMapProjections/)
+
+[More Information](http://cartography.oregonstate.edu/ScaleAdaptiveWebMapProjections.html)
 
 ## General Structure
 
