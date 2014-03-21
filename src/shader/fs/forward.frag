@@ -270,22 +270,18 @@
     }
 
     vec2 invGeographic(in vec2 xy) {
-        if (any(lessThan(xy, vec2(-PI, -PI/2.))) || any(greaterThan(xy, vec2(PI, PI/2.)))) {
+        if (any(greaterThan(abs(xy), vec2(PI, HALFPI)))) {
             discard;
         }
         return xy;
     }
 
     vec2 invSinusoidal(in vec2 xy) {
-        float lat = xy.y;
-        if (lat > PI / 2. || lat < -PI / 2.) {
+        vec2 lonLat = vec2(xy.x / cos(xy.y), xy.y);
+        if (any(greaterThan(abs(xy), vec2(PI, HALFPI)))) {
             discard;
         }
-        float lon = xy.x / cos(xy.y);
-        if (lon > PI || lon < -PI) {
-            discard;
-        }
-        return vec2 (lon, xy.y);
+        return lonLat;
     }
 
     // Canters, F. (2002) Small-scale Map projection Design. p. 218-219.
@@ -466,13 +462,16 @@
         }
 
         vec2 invCylindricalEqualArea(in vec2 xy) {
-            if (xy.x > PI || xy.x < -PI || xy.y > 1. || xy.y < -1.) {
+            if (any(greaterThan(abs(xy), vec2(PI, HALFPI)))) {
                 discard;
             }
             return vec2(xy.x, asin(xy.y));
         }
 
     vec2 invMercator(in vec2 xy) {
+        if (xy.x > PI || xy.x < -PI /*|| xy.y > 1. || xy.y < -1.*/) {
+            discard;
+        }
         return vec2(xy.x, HALFPI - 2. * atan(exp(-xy.y)));
     }
 
@@ -565,24 +564,21 @@
             vec2 lonLat;
             if (projectionID == MIXPROJECTION) {
                 lonLat = invProjectionMix(xy);
-                } else {
-                    lonLat = invProjection(xy, projectionID);
-                }
+            } else {
+                lonLat = invProjection(xy, projectionID);
+            }
 
-                if (cosLatPole != 0.) {
-                    lonLat = transformSphere(lonLat);
-                }
-                lonLat.x += meridian;
+            if (cosLatPole != 0.) {
+                lonLat = transformSphere(lonLat);
+            }
+            lonLat.x += meridian;
 
             // FIXME: use gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1); when texture is loaded instead
             lonLat.y *= -1.;
 
             gl_FragColor = texture2D(texture, lonLat / vec2(PI * 2., PI) + 0.5);
-            /*if (meridian > 0.) {
-                gl_FragColor.r = 1.;
-                }*/
-                } else {
-                    gl_FragColor = texture2D(texture, textureCoord);
-                }
+        } else {
+            gl_FragColor = texture2D(texture, textureCoord);
+        }
 
-            }
+    }

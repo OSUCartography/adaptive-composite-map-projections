@@ -327,10 +327,10 @@ ProjectionFactory.create = function(conf) {
         // FIXME add special treatment for central latitudes close to poles, because the
         // web Mercator ends at approx. +/- 85 degrees north and south
 
-        w = (conf.mapScale - conf.mercatorLimit1) / (conf.mercatorLimit2 - conf.mercatorLimit1);
-        p1 = new Mercator();
+        w = 1 - (conf.mapScale - conf.mercatorLimit1) / (conf.mercatorLimit2 - conf.mercatorLimit1);
+        p1 = ProjectionFactory.createLargeScaleProjection(conf);
         p1.initialize(conf);
-        p2 = ProjectionFactory.createLargeScaleProjection(conf);
+        p2 = new Mercator();
         p2.initialize(conf);
         return new WeightedProjectionMix(p1, p2, w);
     }
