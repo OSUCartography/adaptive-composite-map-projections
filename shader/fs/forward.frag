@@ -291,41 +291,43 @@
     // Canters, F. (2002) Small-scale Map projection Design. p. 218-219.
     // Modified Sinusoidal, equal-area.
     vec2 invCanters1(in vec2 xy) {
-        const float C1 = 1.1966;
-        const float C3 = -0.1290;
-        const float C3x3 = 3. * C3;
-        const float C5 = -0.0076;
-        const float C5x5 = 5. * C5;
-        
         const int MAX_ITERATIONS = 20;
-        float lon = 0.;
-        float lat = 0.;
-        vec2 xy2, dxy;
+        vec2 dxy;
+        vec2 lonLat = vec2(0);
         for (int i = 0; i < MAX_ITERATIONS; i++) {
-            // forward projection
-            xy2 = canters1(lon, lat).xy;
-            // horizontal difference in projected coordinates
-            dxy = xy - xy2;
-            // add half of the horizontal difference to the longitude
-            lon += dxy.x * 0.5;
-            // add half of the vertical difference to the latitude
-            lat += dxy.y * 0.5;
-            /*
-            // to guarantee stable forward projections,
-            // latitude must not go beyond +/-PI/2
-            if (lat < -HALFPI) {
-                lat = -HALFPI;
-            }
-            if (lat > HALFPI) {
-                lat = HALFPI;
-            }
-            */
+            // difference in projected coordinates
+            dxy = xy - canters1(lonLat.x, lonLat.y).xy;
+            // add half of the horizontal and vertical difference to the longitude and the latitude
+            lonLat += dxy * 0.5;
+            // to guarantee stable forward projection, latitude must not go beyond +/-PI/2
+            clamp(lonLat, vec2(-PI, -HALFPI), vec2(PI, HALFPI));
             // stop when difference is small enough
             if (all(lessThan(abs(dxy), vec2(EPS)))) {
                 break;
             }
         }
-        return vec2(lon, lat);
+        return lonLat;
+    }
+
+    // Canters, F. (2002) Small-scale Map projection Design. p. 218-219.
+    // Modified Sinusoidal, equal-area.
+    vec2 invCanters2(in vec2 xy) {
+        const int MAX_ITERATIONS = 20;
+        vec2 dxy;
+        vec2 lonLat = vec2(0);
+        for (int i = 0; i < MAX_ITERATIONS; i++) {
+            // difference in projected coordinates
+            dxy = xy - canters2(lonLat.x, lonLat.y).xy;
+            // add half of the horizontal and vertical difference to the longitude and the latitude
+            lonLat += dxy * 0.5;
+            // to guarantee stable forward projection, latitude must not go beyond +/-PI/2
+            clamp(lonLat, vec2(-PI, -HALFPI), vec2(PI, HALFPI));
+            // stop when difference is small enough
+            if (all(lessThan(abs(dxy), vec2(EPS)))) {
+                break;
+            }
+        }
+        return lonLat;
     }
 
     vec2 invTransformedWagner(in vec2 xy) {
@@ -470,10 +472,10 @@
             return vec2(xy.x, asin(xy.y));
         }
 
-        vec2 invProjection(in vec2 xy, in float projectionID) {
+    vec2 invProjection(in vec2 xy, in float projectionID) {
 
-        // world map projections
-        if (projectionID == TRANSFORMED_WAGNER_ID) {
+    // world map projections
+    if (projectionID == TRANSFORMED_WAGNER_ID) {
           return invTransformedWagner(xy);
       }
       else if (projectionID == EPSG_ROBINSON) {
@@ -491,10 +493,10 @@
       else if (projectionID == CANTERS1_ID) {
           return invCanters1(xy);
       }
-        /*else if (projectionID == CANTERS2_ID) {
-         return canters2(lon, lat);
-         }*/
-         else if (projectionID == CYLINDRICAL_EQUAL_AREA_ID) {
+    else if (projectionID == CANTERS2_ID) {
+         return invCanters2(xy);
+         }
+    else if (projectionID == CYLINDRICAL_EQUAL_AREA_ID) {
           return invCylindricalEqualArea(xy);
       }
         // continental scale projection
