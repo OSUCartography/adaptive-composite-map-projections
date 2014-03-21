@@ -472,6 +472,10 @@
             return vec2(xy.x, asin(xy.y));
         }
 
+    vec2 invMercator(in vec2 xy) {
+        return vec2(xy.x, HALFPI - 2. * atan(exp(-xy.y)));
+    }
+
     vec2 invProjection(in vec2 xy, in float projectionID) {
 
     // world map projections
@@ -511,13 +515,12 @@
         else if (projectionID == -2.) {
           return invLambertAzimuthalNorthPolar(xy);
       }
-        else {//if (projectionID == -3.) {
+        else if (projectionID == -3.) {
           return invLambertAzimuthalSouthPolar(xy);
+      } else { // if (projectionID == EPSG_MERCATOR) {
+        return invMercator(xy);
       }
         /*
-         if (projectionID == EPSG_MERCATOR) {
-         return mercator(lon, lat);
-         }
          if (projectionID == EPSG_LAMBERT_CYLINDRICAL_TRANSVERSE) {
          return lambertCylindricalTransverse(lon, lat);
          }
@@ -530,38 +533,28 @@
         // maximum number of loops
         const int MAX_LOOP = 25;
         
-        float dx, dy;
+        // initial estimation of lon/lat
         vec2 inv1 = invProjection(xy, mix1ProjectionID);
         vec2 inv2 = invProjection(xy, mix2ProjectionID);
-        
-        vec2 inv = mix(inv2, inv1, mixWeight);
-        float lon = inv.x;
-        float lat = inv.y;
+        vec2 lonLat = mix(inv2, inv1, mixWeight);
         
         for (int i = 0; i < MAX_LOOP; i++) {
-            // forward projection
-            vec2 approxXY = projectionMix(vec2(lon, lat));
-            // horizontal difference in projected coordinates
-            dx = xy.x - approxXY.x;
-            // add half of the horizontal difference to the longitude
-            lon += dx * 0.5;
-            
-            // vertical difference in projected coordinates
-            dy = xy.y - approxXY.y;
-            
-            // add half of the vertical difference to the latitude
-            lat += dy * 0.5;
-            
+            // difference in projected coordinates
+            vec2 dxy = xy - projectionMix(vec2(lonLat)).xy;
+            // add half of the horizontal and vertical difference to the longitude and the latitude
+            lonLat += dxy * 0.5;
+            // to guarantee stable forward projection, latitude must not go beyond +/-PI/2
+            clamp(lonLat, vec2(-PI, -HALFPI), vec2(PI, HALFPI));
             // stop when difference is small enough
-            if (abs(dx) < EPS && abs(dy) < EPS) {
+            if (all(lessThan(abs(dxy), vec2(EPS)))) {
                 break;
             }
         }
         
-        if (lon > PI || lon < -PI || lat > PI / 2. || lat < -PI / 2.) {
+        if (any(greaterThan(abs(lonLat), vec2(PI, HALFPI)))){
             discard;
         }
-        return vec2(lon, lat);
+        return lonLat;
     }
 
     void main(void) {
