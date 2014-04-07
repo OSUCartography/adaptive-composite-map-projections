@@ -161,7 +161,7 @@ $(window).load(function() {"use strict";
             tilejson = {
                 "version" : "1.0.0",
                 "scheme" : "tms",
-                "tiles" : ['http://cartography.geo.oregonstate.edu/naturalearth/{z}/{x}/{y}.png']
+                "tiles" : ['http://cartography.oregonstate.edu/tiles/naturalearth/{z}/{x}/{y}.png']
             };
             slippyMap = new MM.Map(parent, new wax.mm.connector(tilejson));
 
