@@ -29,9 +29,10 @@ varying float alongAntimeridian;
 //flag for strips
 //uniform int flagStrips;
 
-// hack: size of cell in radians
+// FIXME hack: size of cell in radians
 uniform float cellsize;
 
+// FIXME should be int
 uniform float projectionID;
 
 // projections to mix and weight for the mix
@@ -39,7 +40,6 @@ uniform float projectionID;
 uniform float mix1ProjectionID;
 uniform float mix2ProjectionID;
 uniform float mixWeight;
-
 
 // spherical rotation
 uniform float sinLatPole;
@@ -61,6 +61,7 @@ uniform float wagnerCA;
 uniform float wagnerCB;
 		
 // parameters for Albers conic
+// FIXME prepend with "albers"
 uniform float n;
 uniform float c;
 uniform float rho0;
