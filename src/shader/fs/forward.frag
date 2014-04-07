@@ -95,11 +95,17 @@
     // A polynomial version of the Robinson projection.
     // Canters, F., Decleir, H. 1989. The world in perspective – A directory of 
     // world map projections. Chichester, John Wiley and Sons: p. 143.
-    vec4 robinson(in float lon, in float lat) {
-        float lat2 = lat * lat;
-        float x = lon * (0.8507 - lat2 * (0.1450 + lat2 * 0.0104));
-        float y = lat * (0.9642 - lat2 * (0.0013 + lat2 * 0.0129));
-        return vec4(x, y + falseNorthing, 0., 1.);
+    vec4 robinson(in vec2 lonLat) {
+        //float x = lon * (0.8507 - lat2 * (0.1450 + lat2 * 0.0104));
+        //float y = lat * (0.9642 - lat2 * (0.0013 + lat2 * 0.0129));
+
+        vec2 lat2 = vec2(lonLat.y * lonLat.y);
+        vec2 xy = lat2 * vec2(0.0104, 0.0129);
+        xy += vec2(0.1450, 0.0013);
+        xy *= -lat2;
+        xy += vec2(0.8507, 0.9642);
+        xy *= lonLat;        
+        return vec4(xy.x, xy.y + falseNorthing, 0., 1.);
     }
 
     // B. Savric et al., A polynomial equation for the Natural Earth projection,
@@ -197,24 +203,20 @@
     }
 
     vec4 mercator(in float lon, in float lat) {
-        if (lat > WEB_MERCATOR_MAX_LAT) {
-            lat = WEB_MERCATOR_MAX_LAT;
-            } else if (lat < -WEB_MERCATOR_MAX_LAT) {
-                lat = -WEB_MERCATOR_MAX_LAT;
-            }
-            float y = log(tan(0.5 * (PI / 2. + lat)));        
-            return vec4(lon, y + falseNorthing, 0., 1.);
-        }
+        lat = clamp(lat, -WEB_MERCATOR_MAX_LAT, WEB_MERCATOR_MAX_LAT);
+        float y = log(tan(0.5 * (PI / 2. + lat)));        
+        return vec4(lon, y + falseNorthing, 0., 1.);
+    }
 
-        vec4 lambertCylindricalTransverse(in float lon, in float lat) {
-            float k0 = 1.;
-            float lat0 = 0.;
+    vec4 lambertCylindricalTransverse(in float lon, in float lat) {
+        float k0 = 1.;
+        float lat0 = 0.;
 
-            float x = cos(lat) * sin(lon) / k0;
-            float y = k0 * (atan(tan(lat), cos(lon)) - lat0);
+        float x = cos(lat) * sin(lon) / k0;
+        float y = k0 * (atan(tan(lat), cos(lon)) - lat0);
 
-            return vec4(x, y + falseNorthing, 0., 1.);
-        }
+        return vec4(x, y + falseNorthing, 0., 1.);
+    }
 
         vec4 project(in vec2 lonLat, in float projectionID) {
             float lon;
@@ -227,7 +229,7 @@
         if (projectionID == TRANSFORMED_WAGNER_ID) {
             return transformedWagner(lonLat);
             } else if (projectionID == EPSG_ROBINSON) {
-                return robinson(lon, lat);
+                return robinson(lonLat);
                 } else if (projectionID == NATURAL_EARTH_ID) {
                     return naturalEarth(lon, lat);
                     } else if (projectionID == EPSG_GEOGRAPHIC) {
