@@ -105,9 +105,9 @@ function AlbersConicEqualArea() {"use strict";
     this.getShaderUniforms = function() {
         return {
             "projectionID" : this.getID(),
-            "c" : c,
-            "rho0" : rho0,
-            "n" : n
+            "albersC" : c,
+            "albersRho0" : rho0,
+            "albersN" : n
         };
     };
 

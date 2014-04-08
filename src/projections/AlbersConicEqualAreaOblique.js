@@ -145,9 +145,9 @@ function AlbersConicEqualAreaOblique(dy) {"use strict";
 		cosP = Math.cos(invertedPoleLat);
        	return {
 			"projectionID" : this.getID(),
-			"c" : c,
-			"rho0" : rho0,
-			"n" : n,
+			"albersC" : c,
+			"albersRho0" : rho0,
+			"albersN" : n,
 			"sinLatPole" : sinP,
 			"cosLatPole" : cosP,
 			"falseNorthing" : dy

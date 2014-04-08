@@ -68,6 +68,6 @@ function LambertAzimuthalEqualAreaOblique() {"use strict";
     };
 
     this.getID = function() {
-        return 28;
+        return -2;
     };
 }

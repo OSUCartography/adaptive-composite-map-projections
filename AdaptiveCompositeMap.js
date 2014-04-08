@@ -1,4 +1,4 @@
-/* Build Time: April 7, 2014 11:49:05 */
+/* Build Time: April 8, 2014 03:57:17 */
 /*globals LambertCylindricalEqualArea, ProjectionFactory */
 function MapEvents(map) {"use strict";
 
@@ -5193,9 +5193,9 @@ function AlbersConicEqualArea() {"use strict";
     this.getShaderUniforms = function() {
         return {
             "projectionID" : this.getID(),
-            "c" : c,
-            "rho0" : rho0,
-            "n" : n
+            "albersC" : c,
+            "albersRho0" : rho0,
+            "albersN" : n
         };
     };
 
@@ -5350,9 +5350,9 @@ function AlbersConicEqualAreaOblique(dy) {"use strict";
 		cosP = Math.cos(invertedPoleLat);
        	return {
 			"projectionID" : this.getID(),
-			"c" : c,
-			"rho0" : rho0,
-			"n" : n,
+			"albersC" : c,
+			"albersRho0" : rho0,
+			"albersN" : n,
 			"sinLatPole" : sinP,
 			"cosLatPole" : cosP,
 			"falseNorthing" : dy
@@ -5764,7 +5764,7 @@ function LambertAzimuthalEqualAreaOblique() {"use strict";
     };
 
     this.getID = function() {
-        return 28;
+        return -2;
     };
 }
 /*globals GraticuleOutline */
