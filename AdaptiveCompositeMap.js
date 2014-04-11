@@ -1,4 +1,4 @@
-/* Build Time: April 8, 2014 03:57:17 */
+/* Build Time: April 11, 2014 07:59:56 */
 /*globals LambertCylindricalEqualArea, ProjectionFactory */
 function MapEvents(map) {"use strict";
 
@@ -5759,7 +5759,6 @@ function LambertAzimuthalEqualAreaOblique() {"use strict";
             "projectionID" : this.getID(),
             "sinLatPole" : sinLat0,
             "cosLatPole" : cosLat0
-
         };
     };
 
@@ -6006,6 +6005,144 @@ function LambertCylindricalEqualArea() {"use strict";
         return -1;
     };
 }
+function LambertMercatorTransformation(w) {
+
+    var mercator, rotatedTransformedLambert, WEB_MERCATOR_MAX_LAT = 1.4844222297453322, temp_xy = [], poleLat;
+    
+    this.toString = function() {
+        return "Transformation between Lambert azimuthal and Mercator";
+    };
+
+    this.isEqualArea = function() {
+        return false;
+    };
+
+    this.initialize = function(conf) {
+        mercator = new Mercator();
+        mercator.initialize(conf);
+
+        // FIXME adjust standard parallel
+        var transLambert = TransformedLambertAzimuthal.LambertCylindrical();
+        transLambert.transformToLambertAzimuthal(1 - w);
+
+        poleLat = Math.PI / 2 - conf.lat0;
+        rotatedTransformedLambert = new TransformedProjection(transLambert, 0, poleLat, false);
+    };
+
+    this.forward = function(lon, lat, xy) {
+        rotatedTransformedLambert.forward(lon, lat, xy);
+        mercator.forward(lon, lat, temp_xy);
+        xy[0] = xy[0] * w + temp_xy[0] * (1 - w);
+        xy[1] = xy[1] * w + temp_xy[1] * (1 - w);
+    };
+
+    this.inverse = function(x, y, lonlat) {
+
+        // tolerance for approximating longitude and latitude
+        // less than a hundreth of a second
+        var TOL = 0.000000001;
+
+        // maximum number of loops
+        var MAX_LOOP = 1000;
+
+        var HALFPI = Math.PI * 0.5;
+        var counter = 0;
+        var dx, dy;
+        var lon = 0;
+        var lat = 0;
+        var xy = [];
+
+        do {
+            // forward projection
+            this.forward(lon, lat, xy);
+            // horizontal difference in projected coordinates
+            dx = x - xy[0];
+            // add half of the horizontal difference to the longitude
+            lon += dx * 0.5;
+
+            // vertical difference in projected coordinates
+            if (dy === y - xy[1]) {
+                // the improvement to the latitude did not change with this iteration
+                // this is the case for polar latitudes
+                lat = lat > 0 ? HALFPI : -HALFPI;
+                dy = 0;
+            } else {
+                dy = y - xy[1];
+            }
+
+            // add half of the vertical difference to the latitude
+            lat += dy * 0.5;
+
+            // to guarantee stable forward projections,
+            // latitude must not go beyond +/-PI/2
+            if (lat < -HALFPI) {
+                lat = -HALFPI;
+            }
+            if (lat > HALFPI) {
+                lat = HALFPI;
+            }
+
+            // stop if it is not converging
+            if ((counter += 1) === MAX_LOOP) {
+                lon = NaN;
+                lat = NaN;
+                break;
+            }
+
+            // stop when difference is small enough
+        } while (dx > TOL || dx < -TOL || dy > TOL || dy < -TOL);
+
+        if (lon > Math.PI || lon < -Math.PI || lat > Math.PI / 2 || lat < -Math.PI / 2) {
+            lonlat[0] = NaN;
+            lonlat[1] = NaN;
+        } else {
+            lonlat[0] = lon;
+            lonlat[1] = lat;
+        }
+    };
+
+    this.getOutline = function() {
+        if (w === 1) {
+            return GraticuleOutline.circularOutline(2);
+        } 
+        if (w === 0) {
+            return GraticuleOutline.rectangularOutline(this, WEB_MERCATOR_MAX_LAT, -Math.PI, -WEB_MERCATOR_MAX_LAT, Math.PI);
+        }
+        return GraticuleOutline.genericOutline(this);
+    };
+
+    this.getShaderUniforms = function() {
+        var u, uniforms, uniforms1, uniforms2;
+        
+        uniforms = {
+            "projectionID" : 123456.0,
+            "mixWeight" : w,
+            "mix1ProjectionID" : rotatedTransformedLambert.getID(),
+            "mix2ProjectionID" : mercator.getID()
+        };
+        uniforms1 = rotatedTransformedLambert.getShaderUniforms();
+        uniforms2 = mercator.getShaderUniforms();
+        
+        for (u in uniforms1) {
+            if (uniforms1.hasOwnProperty(u) && !uniforms.hasOwnProperty(u)) {
+                uniforms[u] = uniforms1[u];
+            }
+        }
+        for (u in uniforms2) {
+            if (uniforms2.hasOwnProperty(u) && !uniforms.hasOwnProperty(u)) {
+                uniforms[u] = uniforms2[u];
+            }
+        }
+        
+        uniforms.falseNorthing = uniforms1.falseNorthing === undefined ? 0 : uniforms1.falseNorthing;
+        uniforms.falseNorthing2 = uniforms2.falseNorthing === undefined ? 0 : uniforms2.falseNorthing;
+
+        uniforms.sinLatPole = Math.sin(poleLat);
+        uniforms.cosLatPole = Math.cos(poleLat);
+
+        return uniforms;
+    };
+}
 /*globals GraticuleOutline */
 function LambertTransverseCylindricalEqualArea() {"use strict";
 
@@ -6095,6 +6232,10 @@ function Mercator() {"use strict";
 
     this.setVerticalShift = function(verticalShift) {
         dy = verticalShift;
+    };
+
+    this.getVerticalShift = function() {
+        return dy;
     };
 
     this.forward = function(lon, lat, xy) {
@@ -6611,18 +6752,38 @@ ProjectionFactory.create = function(conf) {
     /**
      * Returns a projection blend of the large scale projection and the Mercator (used for largest scales)
      */
-    function getLargeScaleToMercatorProjection(conf) {
-        var w, p1, p2;
+     function getLargeScaleToMercatorProjection(conf) {
+        var w, p1, mercator, canvasRatio;
 
         // FIXME add special treatment for central latitudes close to poles, because the
         // web Mercator ends at approx. +/- 85 degrees north and south
-
-        w = 1 - (conf.mapScale - conf.mercatorLimit1) / (conf.mercatorLimit2 - conf.mercatorLimit1);
-        p1 = ProjectionFactory.createLargeScaleProjection(conf);
-        p1.initialize(conf);
-        p2 = new Mercator();
-        p2.initialize(conf);
-        return new WeightedProjectionMix(p1, p2, w);
+        
+        canvasRatio = conf.canvasHeight / conf.canvasWidth;
+        if (canvasRatio < conf.formatRatioLimit || canvasRatio > 1 / conf.formatRatioLimit) {
+            // portrait or landscape format
+            mercator = new Mercator();
+            mercator.initialize(conf);
+            w = 1 - (conf.mapScale - conf.mercatorLimit1) / (conf.mercatorLimit2 - conf.mercatorLimit1);
+            p1 = ProjectionFactory.createLargeScaleProjection(conf);
+            p1.initialize(conf);
+            return new WeightedProjectionMix(p1, mercator, w);
+        } else {
+            // square format
+            /*
+            // this works, but is not compatibel with vertex shader, because only one of the the projections is rotated.
+            p1 = TransformedLambertAzimuthal.LambertCylindrical();
+            // weight is linearly interpolated between the two Mercator scale limits
+            w = (conf.mercatorLimit2 - conf.mapScale) / (conf.mercatorLimit2 - conf.mercatorLimit1);
+            p1.transformToLambertAzimuthal(1 - w);
+            poleLat = Math.PI / 2 - conf.lat0;
+            var t = new TransformedProjection(p1, 0, poleLat, false);
+            return new WeightedProjectionMix(t, mercator, w);
+            */
+            w = (conf.mercatorLimit2 - conf.mapScale) / (conf.mercatorLimit2 - conf.mercatorLimit1);
+            var transProj = new LambertMercatorTransformation(w);
+            transProj.initialize(conf);
+            return transProj;
+        }        
     }
 
     function getMediumToLargeScaleProjection(conf) {
@@ -7503,6 +7664,9 @@ function TransformedProjection(proj, dy, poleLat, onlyInverseRotation) {"use str
         return poleLat;
     };
 
+    this.getID = function() {
+        return proj.getID();
+    };
 }
 function WeightedProjectionMix(projection1, projection2, weight1) {
 
@@ -7620,7 +7784,20 @@ function WeightedProjectionMix(projection1, projection2, weight1) {
             "mix2ProjectionID" : proj2.getID()
         };
         uniforms1 = proj1.getShaderUniforms();
+        console.log("************* Projection 1");
+        for (var prop in uniforms1) {
+            if (uniforms1.hasOwnProperty(prop)) {
+                console.log(prop, uniforms1[prop])
+            }
+        }
+
         uniforms2 = proj2.getShaderUniforms();
+        console.log("************* Projection 2");
+        for (var prop in uniforms2) {
+            if (uniforms2.hasOwnProperty(prop)) {
+                console.log(prop, uniforms2[prop])
+            }
+        }
 
         for (u in uniforms1) {
             if (uniforms1.hasOwnProperty(u) && !uniforms.hasOwnProperty(u)) {
@@ -7636,6 +7813,13 @@ function WeightedProjectionMix(projection1, projection2, weight1) {
         uniforms.falseNorthing = uniforms1.falseNorthing === undefined ? 0 : uniforms1.falseNorthing;
         uniforms.falseNorthing2 = uniforms2.falseNorthing === undefined ? 0 : uniforms2.falseNorthing;
         
+        console.log("************* Projection Combined");
+        for (var prop in uniforms) {
+            if (uniforms.hasOwnProperty(prop)) {
+                console.log(prop, uniforms[prop])
+            }
+        }
+
         return uniforms;
     };
 }

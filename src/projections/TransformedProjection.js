@@ -80,4 +80,7 @@ function TransformedProjection(proj, dy, poleLat, onlyInverseRotation) {"use str
         return poleLat;
     };
 
+    this.getID = function() {
+        return proj.getID();
+    };
 }
