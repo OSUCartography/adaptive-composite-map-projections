@@ -68,7 +68,7 @@ vec2 transformSphere(in vec2 lonLat) {
 	float sinLat = sinLonLat.y;
 	float cosLat = cosLonLat.y;
 	float cosLat_x_cosLon = cosLat * cosLon;
-
+    
     // FIXME normalize ?
     float lon = /*normalizeLam(*/atan(cosLat * sinLon, sinLatPole * cosLat_x_cosLon + cosLatPole * sinLat)/*)*/;
     float lat = asin(sinLatPole * sinLat - cosLatPole * cosLat_x_cosLon);
@@ -76,12 +76,12 @@ vec2 transformSphere(in vec2 lonLat) {
 }
 
 // A polynomial version of the Robinson projection.
-// Canters, F., Decleir, H. 1989. The world in perspective – A directory of 
+// Canters, F., Decleir, H. 1989. The world in perspective – A directory of
 // world map projections. Chichester, John Wiley and Sons: p. 143.
 vec2 robinson(in vec2 lonLat) {
     //float x = lon * (0.8507 - lat2 * (0.1450 + lat2 * 0.0104));
     //float y = lat * (0.9642 - lat2 * (0.0013 + lat2 * 0.0129));
-
+    
     vec2 lat2 = vec2(lonLat.y * lonLat.y);
     vec2 xy = lat2 * vec2(0.0104, 0.0129);
     xy += vec2(0.1450, 0.0013);
@@ -168,24 +168,24 @@ vec2 albersConic(in vec2 lonLat) {
 	float y = albersRho0 - rho * cos(n_x_lon);
 	return vec2(x, y);
 }
-
-vec2 lambertAzimuthalOblique(in vec2 lonLat) {
-	float lon = lonLat.x;
-	float lat = lonLat.y;
-	float sinLon = sin(lon);
-	float cosLon = cos(lon);
-	float sinLat = sin(lat);
-	float cosLat = cos(lat);
-	float y = 1. + sinLatPole * sinLat + cosLatPole * cosLat * cosLon;
-	// the projection is indeterminate for lon = PI and lat = -lat0
-	// this point would have to be plotted as a circle
-	// The following Math.sqrt will return NaN in this case.
-	y = sqrt(2. / y);
-	float x = y * cosLat * sinLon;
-	y = y * (cosLatPole * sinLat - sinLatPole * cosLat * cosLon);
-	return vec2(x, y);
-}
-
+/*
+ vec2 lambertAzimuthalOblique(in vec2 lonLat) {
+ float lon = lonLat.x;
+ float lat = lonLat.y;
+ float sinLon = sin(lon);
+ float cosLon = cos(lon);
+ float sinLat = sin(lat);
+ float cosLat = cos(lat);
+ float y = 1. + sinLatPole * sinLat + cosLatPole * cosLat * cosLon;
+ // the projection is indeterminate for lon = PI and lat = -lat0
+ // this point would have to be plotted as a circle
+ // The following Math.sqrt will return NaN in this case.
+ y = sqrt(2. / y);
+ float x = y * cosLat * sinLon;
+ y = y * (cosLatPole * sinLat - sinLatPole * cosLat * cosLon);
+ return vec2(x, y);
+ }
+ */
 vec2 lambertAzimuthalNorthPolar(in vec2 lonLat) {
 	float lon = lonLat.x;
 	float lat = lonLat.y;
@@ -204,7 +204,7 @@ vec2 mercator(in vec2 lonLat) {
 	float lon = lonLat.x;
 	float lat = lonLat.y;
 	//lat = clamp(lat, -WEB_MERCATOR_MAX_LAT, WEB_MERCATOR_MAX_LAT);
-	float y = log(tan(0.5 * (PI / 2. + lat)));        
+	float y = log(tan(0.5 * (PI / 2. + lat)));
 	return vec2(lon, y);
 }
 
@@ -225,33 +225,33 @@ vec2 project(in vec2 lonLat, in float projectionID) {
 	// world map projections
 	if (projectionID == TRANSFORMED_WAGNER_ID) {
 		return transformedWagner(lonLat);
-		} else if (projectionID == EPSG_ROBINSON) {
-			return robinson(lonLat);
-			} else if (projectionID == NATURAL_EARTH_ID) {
-				return naturalEarth(lonLat);
-				} else if (projectionID == EPSG_GEOGRAPHIC) {
-					return lonLat;
-					} else if (projectionID == EPSG_SINUSOIDAL) {
-						return sinusoidal(lonLat);
-						} else if (projectionID == CANTERS1_ID) {
-							return canters1(lonLat);
-							} else if (projectionID == CANTERS2_ID) {
-								return canters2(lonLat);
-								} else if (projectionID == CYLINDRICAL_EQUAL_AREA_ID) {
-									return cylindricalEqualArea(lonLat);
-								}
+    } else if (projectionID == EPSG_ROBINSON) {
+        return robinson(lonLat);
+    } else if (projectionID == NATURAL_EARTH_ID) {
+        return naturalEarth(lonLat);
+    } else if (projectionID == EPSG_GEOGRAPHIC) {
+        return lonLat;
+    } else if (projectionID == EPSG_SINUSOIDAL) {
+        return sinusoidal(lonLat);
+    } else if (projectionID == CANTERS1_ID) {
+        return canters1(lonLat);
+    } else if (projectionID == CANTERS2_ID) {
+        return canters2(lonLat);
+    } else if (projectionID == CYLINDRICAL_EQUAL_AREA_ID) {
+        return cylindricalEqualArea(lonLat);
+    }
 	// continental and regional scale projections
 	else if (projectionID == ALBERS_ID) {
 		return albersConic(lonLat);
-		} else if (projectionID == LAMBERT_AZIMUTHAL_NORTH_POLAR_ID) {
-			return lambertAzimuthalNorthPolar(lonLat);
-			} else if (projectionID == LAMBERT_AZIMUTHAL_SOUTH_POLAR_ID) {
-				return lambertAzimuthalSouthPolar(lonLat);
-				} else if (projectionID == EPSG_MERCATOR) {
-					return mercator(lonLat);
+    } else if (projectionID == LAMBERT_AZIMUTHAL_NORTH_POLAR_ID) {
+        return lambertAzimuthalNorthPolar(lonLat);
+    } else if (projectionID == LAMBERT_AZIMUTHAL_SOUTH_POLAR_ID) {
+        return lambertAzimuthalSouthPolar(lonLat);
+    } else if (projectionID == EPSG_MERCATOR) {
+        return mercator(lonLat);
 	} else {//if (projectionID == EPSG_LAMBERT_CYLINDRICAL_TRANSVERSE) {
 		return lambertCylindricalTransverse(lonLat);
-	}	
+	}
 }
 
 vec2 projectionMix(in vec2 lonLat) {
@@ -266,7 +266,9 @@ vec2 projectionMix(in vec2 lonLat) {
 void main(void) {
 	vec2 xy, lonLatTransformed;
 	vec2 lonLat = radians(vPosition);
-
+    
+    // FIXME a tentative solution for the transformation from Lambert azimuthal to Mercator for square format maps
+    // first rotate geometry, then project
 	if (projectionID == 123456.) {
 		// shift longitude by central longitude
 		lonLat.x = 2.0 * PI * (fract(0.5 * M_1_PI * (lonLat.x - meridian) + 0.5) - 0.5);
@@ -275,19 +277,19 @@ void main(void) {
 		vec2 merc = mercator(lonLat);
 		merc.y += falseNorthing2;
 		xy = mix(merc, transWagner, mixWeight);
-
+        
 		alongAntimeridian = 0.;
 		textureCoord = vPosition / vec2(360.0, -180.0) + 0.5;
 	} else {
 		lonLatTransformed = transformSphere(lonLat);
-
+        
     	// shift by central meridian
     	lonLatTransformed.x = 2. * PI * (fract(0.5 * M_1_PI * (lonLatTransformed.x + meridian) + 0.5) - 0.5);
-
+        
     	alongAntimeridian = 1. - step(cellsize, abs(abs(lonLatTransformed.x) - PI));
-
+        
     	textureCoord = lonLatTransformed / vec2(2. * PI, -PI) + 0.5;
-    
+        
     	if (projectionID == MIXPROJECTION) {
     		xy = projectionMix(lonLat);
     	} else {
@@ -296,13 +298,4 @@ void main(void) {
     	}
     }
     gl_Position = modelViewProjMatrix * vec4(xy, 0., 1.);
-
-    xy = lambertAzimuthalOblique(lonLat);
-    xy.y += falseNorthing;
-    gl_Position = modelViewProjMatrix * vec4(xy, 0., 1.);
-	lonLatTransformed = lonLat;
-    lonLatTransformed.x = 2. * PI * (fract(0.5 * M_1_PI * (lonLatTransformed.x + meridian) + 0.5) - 0.5);
-   	alongAntimeridian = 1. - step(cellsize, abs(abs(lonLatTransformed.x) - PI));
-   	textureCoord = lonLatTransformed / vec2(2. * PI, -PI) + 0.5;
-
 }

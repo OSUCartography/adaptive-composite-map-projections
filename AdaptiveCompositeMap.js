@@ -1,4 +1,4 @@
-/* Build Time: April 11, 2014 07:59:56 */
+/* Build Time: April 16, 2014 11:52:21 */
 /*globals LambertCylindricalEqualArea, ProjectionFactory */
 function MapEvents(map) {"use strict";
 
@@ -213,11 +213,12 @@ function MapEvents(map) {"use strict";
         }
         while (counter < 10 && d > 1)
         */
+        //map.setCenter() in moveMapCenter renders the map
         moveMapCenter(prevDrag.x, prevDrag.y, xy.pageX, xy.pageY);
 
         prevDrag.x = xy.pageX;
         prevDrag.y = xy.pageY;
-        map.render(true);
+        
         map.getParent().style.cursor = 'move';
     });
 
@@ -5759,6 +5760,7 @@ function LambertAzimuthalEqualAreaOblique() {"use strict";
             "projectionID" : this.getID(),
             "sinLatPole" : sinLat0,
             "cosLatPole" : cosLat0
+
         };
     };
 
@@ -6005,6 +6007,16 @@ function LambertCylindricalEqualArea() {"use strict";
         return -1;
     };
 }
+/**
+Transition between Lambert azimuthal and Mercator projection, used for square-format maps.
+The Lambert azimuthal is Wagner-transformed into a equal-area cylindrical projection. This 
+transformed projection has an oblique aspect. It is blended with the Mercator projection with
+equatorial aspect.
+TODO 1 Currently the Lambert azimuthal is Wagner-transformed into a Lambert cylindrical. The standard
+parallel should be adjusted to more closely approximate the shape of the Mercator projection.
+TODO 2 Should the transformed Lambert azimuthal be horizontally scaled such that the Mercator and 
+the Lambert cylindrical have the same width?
+*/
 function LambertMercatorTransformation(w) {
 
     var mercator, rotatedTransformedLambert, WEB_MERCATOR_MAX_LAT = 1.4844222297453322, temp_xy = [], poleLat;
@@ -6232,10 +6244,6 @@ function Mercator() {"use strict";
 
     this.setVerticalShift = function(verticalShift) {
         dy = verticalShift;
-    };
-
-    this.getVerticalShift = function() {
-        return dy;
     };
 
     this.forward = function(lon, lat, xy) {
@@ -6779,6 +6787,8 @@ ProjectionFactory.create = function(conf) {
             var t = new TransformedProjection(p1, 0, poleLat, false);
             return new WeightedProjectionMix(t, mercator, w);
             */
+            // same as commented code above, but packaged into a separate projection.
+            // vertex shader will see this as a separate projection and use different schema for texture mapping
             w = (conf.mercatorLimit2 - conf.mapScale) / (conf.mercatorLimit2 - conf.mercatorLimit1);
             var transProj = new LambertMercatorTransformation(w);
             transProj.initialize(conf);
@@ -7784,20 +7794,7 @@ function WeightedProjectionMix(projection1, projection2, weight1) {
             "mix2ProjectionID" : proj2.getID()
         };
         uniforms1 = proj1.getShaderUniforms();
-        console.log("************* Projection 1");
-        for (var prop in uniforms1) {
-            if (uniforms1.hasOwnProperty(prop)) {
-                console.log(prop, uniforms1[prop])
-            }
-        }
-
         uniforms2 = proj2.getShaderUniforms();
-        console.log("************* Projection 2");
-        for (var prop in uniforms2) {
-            if (uniforms2.hasOwnProperty(prop)) {
-                console.log(prop, uniforms2[prop])
-            }
-        }
 
         for (u in uniforms1) {
             if (uniforms1.hasOwnProperty(u) && !uniforms.hasOwnProperty(u)) {
@@ -7813,13 +7810,6 @@ function WeightedProjectionMix(projection1, projection2, weight1) {
         uniforms.falseNorthing = uniforms1.falseNorthing === undefined ? 0 : uniforms1.falseNorthing;
         uniforms.falseNorthing2 = uniforms2.falseNorthing === undefined ? 0 : uniforms2.falseNorthing;
         
-        console.log("************* Projection Combined");
-        for (var prop in uniforms) {
-            if (uniforms.hasOwnProperty(prop)) {
-                console.log(prop, uniforms[prop])
-            }
-        }
-
         return uniforms;
     };
 }

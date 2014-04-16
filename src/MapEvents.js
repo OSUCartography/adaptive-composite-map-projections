@@ -212,11 +212,12 @@ function MapEvents(map) {"use strict";
         }
         while (counter < 10 && d > 1)
         */
+        //map.setCenter() in moveMapCenter renders the map
         moveMapCenter(prevDrag.x, prevDrag.y, xy.pageX, xy.pageY);
 
         prevDrag.x = xy.pageX;
         prevDrag.y = xy.pageY;
-        map.render(true);
+        
         map.getParent().style.cursor = 'move';
     });
 
