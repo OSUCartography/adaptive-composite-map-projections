@@ -1,4 +1,4 @@
-/* Build Time: April 16, 2014 11:52:21 */
+/* Build Time: April 16, 2014 05:32:43 */
 /*globals LambertCylindricalEqualArea, ProjectionFactory */
 function MapEvents(map) {"use strict";
 
@@ -1238,44 +1238,58 @@ WebGL.setUniforms = function(gl, program, scale, lon0, uniforms, canvas) {"use s
 };
 
 WebGL.loadGeometry = function(gl) {"use strict";
-    var vertices, b, x, xIdx, y, yIdx, vbo, nStrips, stripWidth, geometryStrips = [];
+    var vertices, cellSize, b, x, y, xIdx, yIdx, startY, stepY, idxCount, vbo, geometryStrip = {};
 
-	stripWidth = 1;
-    nStrips = 360 / stripWidth;
-    b = {
+    cellSize = 1;
+    b = {        
         startX : -180,
         startY : -90,
-        stepY : stripWidth,
-        countY : 180 / stripWidth + 1
-    };
+        stepX : cellSize,
+        stepY : cellSize,
+        countX : 360 / cellSize + 1,
+        countY : 180 / cellSize + 1
+    }
 
-    // create a series of vertical triangle strips.
-    // FIXME create degenerate triangles for larger triangle strips or
-    // use index buffer instead of triangle strips
-    for ( xIdx = 0; xIdx < nStrips; xIdx += 1) {
-        x = xIdx * stripWidth + b.startX;
-        vertices = new Float32Array(4 * b.countY);
+    vertices = new Float32Array(4 * b.countY * (b.countX - 1));
 
-        // create a vertical triangle strip, triangles in clockwise orientation
-        for ( y = b.startY, yIdx = 0; yIdx < b.countY; yIdx += 1, y += b.stepY) {
-            vertices.set([x + stripWidth, y, x, y], 4 * yIdx);
+    idxCount = 0;
+
+    //generation of one large triangle strip (S-Shaped), with degenerated triangles (NO IBO, just VBO!)
+    //compare url for vbo+ibo, http://dan.lecocq.us/wordpress/2009/12/25/triangle-strip-for-grids-a-construction/
+    for(xIdx = 0; xIdx < b.countX - 1; xIdx++){
+        x = b.startX + xIdx * b.stepX;
+
+        if(xIdx % 2 == 0) {
+            //even cols
+            startY = b.startY;
+            stepY = b.stepY;
+        } else {
+            //odd cols
+            startY = -b.startY;
+            stepY = -b.stepY;
         }
-        vbo = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
-        gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
-        geometryStrips.push({
-            buffer : vbo,
-            vertexCount : vertices.length / 2
-        });
-    }
-    return geometryStrips;
-};
 
-WebGL.deleteGeometry = function(gl, geometryStrips) {"use strict";
-    var i, nStrips = geometryStrips.length;
-    for ( i = 0; i < nStrips; i += 1) {
-        gl.deleteBuffer(geometryStrips[i].buffer);
+        for(yIdx = 0; yIdx < b.countY; yIdx++){
+            y = startY + stepY * yIdx;
+            vertices.set([x,y,x+cellSize,y], 4 * idxCount);
+            idxCount++;
+        }
     }
+
+    vbo = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+    
+    geometryStrip.buffer = vbo;
+    geometryStrip.vertexCount = vertices.length / 2;
+    geometryStrip.cellSize = cellSize;
+
+    return geometryStrip;
+
+}
+
+WebGL.deleteGeometry = function(gl, geometryStrip) {"use strict";
+    gl.deleteBuffer(geometryStrip.buffer);
 };
 
 // Scale up a texture image to the next higher power of two dimension.
@@ -1362,7 +1376,7 @@ WebGL.clear = function(gl) {"use strict";
     gl.clear(gl.COLOR_BUFFER_BIT);
 };
 
-WebGL.draw = function(gl, scale, lon0, uniforms, canvas, geometryStrips, shaderProgram) {"use strict";
+WebGL.draw = function(gl, scale, lon0, uniforms, canvas, geometryStrip, shaderProgram) {"use strict";
     var vPositionIdx;
 
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -1372,16 +1386,12 @@ WebGL.draw = function(gl, scale, lon0, uniforms, canvas, geometryStrips, shaderP
     
     WebGL.setUniforms(gl, shaderProgram, scale, lon0, uniforms, canvas);
     
-    // FIXME hack cellsize
-    // FIXME cell size is equal to stripWidth in loadGeometry
-    gl.uniform1f(gl.getUniformLocation(shaderProgram, "cellsize"), 1/180*Math.PI);
+    gl.uniform1f(gl.getUniformLocation(shaderProgram, "cellsize"), geometryStrip.cellSize/180*Math.PI);
     
     vPositionIdx = gl.getAttribLocation(shaderProgram, 'vPosition');
-    geometryStrips.forEach(function(strip) {
-        gl.bindBuffer(gl.ARRAY_BUFFER, strip.buffer);
-        gl.vertexAttribPointer(vPositionIdx, 2, gl.FLOAT, false, 0, 0);
-        gl.drawArrays(gl.TRIANGLE_STRIP, 0, strip.vertexCount);
-    });
+    gl.bindBuffer(gl.ARRAY_BUFFER, geometryStrip.buffer);
+    gl.vertexAttribPointer(vPositionIdx, 2, gl.FLOAT, false, 0, 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, geometryStrip.vertexCount);
 };
 //
 // stateful helper for binaryajax.js's BinaryFile class
