@@ -138,7 +138,6 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
         map.render();
     }
 
-
     this.getCentralLatitude = function() {
         return mapCenter.lat0;
     };

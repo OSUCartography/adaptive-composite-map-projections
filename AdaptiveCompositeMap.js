@@ -1,4 +1,4 @@
-/* Build Time: April 17, 2014 03:07:13 */
+/* Build Time: April 18, 2014 02:22:31 */
 /*globals LambertCylindricalEqualArea, ProjectionFactory */
 function MapEvents(map) {"use strict";
 
@@ -69,18 +69,24 @@ function MapEvents(map) {"use strict";
                 lat0 = ((params.endLat - startLat) / (endTime - startTime)) * (currTime - startTime) + startLat;
                 map.setCenter(lon0, lat0);
                 mapScale = ((params.endScale - startScale) / (endTime - startTime)) * (currTime - startTime) + startScale;
-                map.setMapScale(mapScale);
-                map.render(params.fastRender);
+                map.setMapScale(mapScale); 
             }
         }, 1000 / params.fps);
     }
 
 
     Hammer(map.getParent()).on("doubletap", function(ev) {
-        var xy, endLonLat, endScale;
+        var xy, targetOffset, endLonLat, endScale;
 
         xy = ev.gesture.touches[0];
-        endLonLat = map.canvasXY2LonLat(xy.pageX, xy.pageY);
+        targetOffset = $(xy.target).offset();
+        endLonLat = map.canvasXY2LonLat(xy.pageX - targetOffset.left, xy.pageY - targetOffset.top);
+        
+        if(isNaN(endLonLat[0]) || isNaN(endLonLat[1])) {
+            endLonLat[0] = map.getCentralLongitude();
+            endLonLat[1] = map.getCentralLatitude();
+        }
+
         endScale = map.getMapScale() * TOUCH_DOUBLE_TAP_SCALE_FACTOR;
 
         // FIXME
@@ -4513,7 +4519,6 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
         projectionChangeListener(map);
         map.render();
     }
-
 
     this.getCentralLatitude = function() {
         return mapCenter.lat0;
