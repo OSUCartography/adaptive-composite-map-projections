@@ -4,7 +4,7 @@
 	<property name="src.dir" value="src/" />
 	<property name="build.dir" value="./" />
 	<tstamp>
-		<format property="build.time" pattern="MMMM d, yyyy hh:mm:ss" locale="en, US" />
+		<format property="build.time" pattern="MMMM d, yyyy hh:mm:ss a" locale="en, US" />
 	</tstamp>
 	<target name="init">
 		<!--
@@ -22,6 +22,9 @@
 			<header>/* Build Time: ${build.time} */</header>
 			<fileset dir="${src.dir}" includes="**/*.js" />
 		</concat>
+		<echo file="${build.dir}/AdaptiveCompositeMap.js" append="true">
+var adaptiveCompositeMapBuildTimeStamp = "${build.time}";
+		</echo>
 	</target>
 	<target name="validate">
 		<jshint>

@@ -1,4 +1,4 @@
-/* Build Time: April 18, 2014 02:22:31 */
+/* Build Time: April 19, 2014 09:01:28 PM */
 /*globals LambertCylindricalEqualArea, ProjectionFactory */
 function MapEvents(map) {"use strict";
 
@@ -82,6 +82,7 @@ function MapEvents(map) {"use strict";
         targetOffset = $(xy.target).offset();
         endLonLat = map.canvasXY2LonLat(xy.pageX - targetOffset.left, xy.pageY - targetOffset.top);
         
+        //if endLonLat are NaN use the current mapCenter for the Transition
         if(isNaN(endLonLat[0]) || isNaN(endLonLat[1])) {
             endLonLat[0] = map.getCentralLongitude();
             endLonLat[1] = map.getCentralLatitude();
@@ -8152,3 +8153,6 @@ function ShpError(msg, id) {
 ShpError.ERROR_UNDEFINED = 0;
 // a 'no data' error is thrown when the byte array runs out of data.
 ShpError.ERROR_NODATA = 1;
+
+var adaptiveCompositeMapBuildTimeStamp = "April 19, 2014 09:01:28 PM";
+		

@@ -498,5 +498,7 @@ $(window).load(function() {"use strict";
         }
     });
 
+    $("#buildTime").text(adaptiveCompositeMapBuildTimeStamp);
+
 });
 
