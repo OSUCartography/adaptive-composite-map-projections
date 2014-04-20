@@ -1,4 +1,4 @@
-/* Build Time: April 19, 2014 09:01:28 PM */
+/* Build Time: April 19, 2014 09:34:23 PM */
 /*globals LambertCylindricalEqualArea, ProjectionFactory */
 function MapEvents(map) {"use strict";
 
@@ -7330,7 +7330,7 @@ function Sinusoidal() {"use strict";
 }
 /*globals GraticuleOutline*/
 function TransformedLambertAzimuthal(lonLimit, latLimit, ratio) {"use strict";
-	var W_MAX = 0.999999, EPS10 = 1.e-10, w, m, n, CA, CB, projName, outline, cosLat0 = 1, lat0 = 0;
+	var W_MAX = 0.999999, EPS10 = 1.e-10, w, m, n, CA, CB, projName, cosLat0 = 1, lat0 = 0;
 
 	this.isCylindrical = function() {
 		return w === 1 && (lonLimit === 0 && latLimit === 0);
@@ -7507,48 +7507,38 @@ function TransformedLambertAzimuthal(lonLimit, latLimit, ratio) {"use strict";
 
 	// setup this.forward and this.inverse
 	// setup the projection name
-	// setup the projection outline geometry
 	function init(proj) {
 		proj.forward = forwardTransformedLambertAzimuthal;
 		proj.inverse = inverseTransformedLambertAzimuthal;
 
-		// compute the outline after setting up the forward and inverse functions
 		if (proj.isHammer()) {
 			projName = "Hammer";
-			outline = GraticuleOutline.pointedPoleOutline(proj);
 		}
 		// first test for cylindrical, then for Lambert cylindrical
 		else if (proj.isLambertCylindrical()) {
 			projName = "Lambert Cylindrial Equal Area";
 			proj.forward = forwardCylindricalEqualArea;
 			proj.inverse = inverseCylindricalEqualArea;
-			outline = GraticuleOutline.rectangularOutline(proj, Math.PI / 2, -Math.PI, -Math.PI / 2, Math.PI);
 		} else if (proj.isCylindrical()) {
 			projName = "Cylindrical Equal Area";
 			proj.forward = forwardCylindricalEqualArea;
 			proj.inverse = inverseCylindricalEqualArea;
-			outline = GraticuleOutline.rectangularOutline(proj, Math.PI / 2, -Math.PI, -Math.PI / 2, Math.PI);
 		} else if (proj.isLambertAzimuthal()) {
 			projName = "Lambert Azimuthal";
 			proj.forward = forwardLambertAzimuthal;
 			proj.inverse = inverseLambertAzimuthal;
-			outline = GraticuleOutline.circularOutline(2);
 		} else if (proj.isPseudoCylindricalEqualArea()) {
 			projName = "Pseudocylindrical Equal Area";
 			proj.forward = forwardPseudocylindrical;
 			proj.inverse = inversePseudocylindrical;
-            outline = GraticuleOutline.pseudoCylindricalOutline(proj);
 		} else if (proj.isQuarticAuthalic()) {
 			projName = "Quartic Authalic";
 			proj.forward = forwardQuarticAuthalic;
 			proj.inverse = inverseQuarticAuthalic;
-			outline = GraticuleOutline.pointedPoleOutline(proj);
 		} else if (proj.isWagner7()) {
 			projName = "Wagner VII";
-			outline = GraticuleOutline.genericOutline(proj);
 		} else {
 			projName = "Transformed Lambert Azimuthal";
-			outline = GraticuleOutline.genericOutline(proj);
 		}
 	}
 
@@ -7585,13 +7575,26 @@ function TransformedLambertAzimuthal(lonLimit, latLimit, ratio) {"use strict";
 		// first compute the projection parameters
 		updateParameters();
 
-		// then initialize the outlines (which will use the projection parameters)
+		// then initialize the projection
 		init(this);
 	};
 	this.transformToLambertAzimuthal(1);
 
 	this.getOutline = function() {
-		return outline;
+		if (this.isHammer() || this.isQuarticAuthalic()) {
+			return GraticuleOutline.pointedPoleOutline(this);
+		}
+		if (this.isCylindrical() /* includes Lambert cylindrical */ ) {			
+			return GraticuleOutline.rectangularOutline(this, Math.PI / 2, -Math.PI, -Math.PI / 2, Math.PI);
+		}
+		if (this.isLambertAzimuthal()) {			
+			return GraticuleOutline.circularOutline(2);
+		} 
+		if (this.isPseudoCylindricalEqualArea()) {			
+            return GraticuleOutline.pseudoCylindricalOutline(this);
+		} 
+		/* include Wagner VII */
+		return GraticuleOutline.genericOutline(this);
 	};
 
 	this.getShaderUniforms = function() {
@@ -8154,5 +8157,5 @@ ShpError.ERROR_UNDEFINED = 0;
 // a 'no data' error is thrown when the byte array runs out of data.
 ShpError.ERROR_NODATA = 1;
 
-var adaptiveCompositeMapBuildTimeStamp = "April 19, 2014 09:01:28 PM";
+var adaptiveCompositeMapBuildTimeStamp = "April 19, 2014 09:34:23 PM";
 		
