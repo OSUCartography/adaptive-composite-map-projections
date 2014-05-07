@@ -31,7 +31,7 @@ function RasterLayer(url) {"use strict";
         gl.uniform1i(gl.getUniformLocation(shaderProgram, "texture"), 0);
         var uniforms = this.projection.getShaderUniforms();
         stats.begin();
-        WebGL.draw(gl, this.mapScale / this.refScaleFactor * this.glScale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram);
+        WebGL.draw(gl, map.isRenderingWireframe(), this.mapScale / this.refScaleFactor * this.glScale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram);
         stats.end();
 		//document.getElementById("FPS").innerHTML = "<b>Rendering speed:</b> " + stats.ms() + " ms, " + stats.fps() + " fps.";
     };

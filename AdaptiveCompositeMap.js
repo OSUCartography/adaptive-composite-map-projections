@@ -1,4 +1,4 @@
-/* Build Time: April 22, 2014 09:49:04 PM */
+/* Build Time: May 7, 2014 11:01:57 AM */
 /*globals LambertCylindricalEqualArea, ProjectionFactory */
 function MapEvents(map) {"use strict";
 
@@ -1383,8 +1383,8 @@ WebGL.clear = function(gl) {"use strict";
     gl.clear(gl.COLOR_BUFFER_BIT);
 };
 
-WebGL.draw = function(gl, scale, lon0, uniforms, canvas, geometryStrip, shaderProgram) {"use strict";
-    var vPositionIdx;
+WebGL.draw = function(gl, drawWireframe, scale, lon0, uniforms, canvas, geometryStrip, shaderProgram) {"use strict";
+    var vPositionIdx, drawMode = gl.TRIANGLE_STRIP;
 
     gl.clear(gl.COLOR_BUFFER_BIT);
     
@@ -1398,7 +1398,10 @@ WebGL.draw = function(gl, scale, lon0, uniforms, canvas, geometryStrip, shaderPr
     vPositionIdx = gl.getAttribLocation(shaderProgram, 'vPosition');
     gl.bindBuffer(gl.ARRAY_BUFFER, geometryStrip.buffer);
     gl.vertexAttribPointer(vPositionIdx, 2, gl.FLOAT, false, 0, 0);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, geometryStrip.vertexCount);
+    if(drawWireframe){
+        drawMode = gl.LINE_STRIP;
+    }
+    gl.drawArrays(drawMode, 0, geometryStrip.vertexCount);
 };
 //
 // stateful helper for binaryajax.js's BinaryFile class
@@ -1821,7 +1824,8 @@ function Graticule(style, scaleVisibility, poleRadiusPx, poleDistPx) {"use stric
 	
 	// intermediate points are added to graticule lines if the curved line deviates from
 	// a straight line by more than this distance. In pixels.
-	var DEVIATION_TOL_PX = 0.5;
+	// FIXME should use a larger tolerance when fastRender flag is true
+	var DEVIATION_TOL_PX = 1;
 	var EPS = 1.0e-7;
 
 	// each graticule line segment between two intersection points of the graticule (where parallels
@@ -2040,6 +2044,7 @@ function Graticule(style, scaleVisibility, poleRadiusPx, poleDistPx) {"use stric
 		}
 
 		// find out whether poles should be drawn as points and meridians shortened near poles
+		// FIXME
 		var POLE_TOL = 0.3 / 180 * Math.PI;
 		if (this.relativeMapScale < this.map.getScaleLimits()[0]) {
 			// A world map projection is used and the map is only partially visible.
@@ -3989,7 +3994,7 @@ function RasterLayer(url) {"use strict";
         gl.uniform1i(gl.getUniformLocation(shaderProgram, "texture"), 0);
         var uniforms = this.projection.getShaderUniforms();
         stats.begin();
-        WebGL.draw(gl, this.mapScale / this.refScaleFactor * this.glScale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram);
+        WebGL.draw(gl, map.isRenderingWireframe(), this.mapScale / this.refScaleFactor * this.glScale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram);
         stats.end();
 		//document.getElementById("FPS").innerHTML = "<b>Rendering speed:</b> " + stats.ms() + " ms, " + stats.fps() + " fps.";
     };
@@ -4496,6 +4501,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
     var smallScaleMapProjectionName = "Hammer";
     var rotateSmallScales = true;
     var zoomToMap = true;
+    var renderWireframe = false;
 
     var snapEquator = true;
 
@@ -5061,6 +5067,14 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
     this.setDrawOverlay = function(draw) {
         drawOverlayCanvas = draw;
     };
+
+    this.isRenderingWireframe = function(){
+        return renderWireframe;
+    }
+
+    this.setRenderWireframe = function(wireframe) {
+        renderWireframe = wireframe;
+    }
 
     this.isEquatorSnapping = function() {
         return snapEquator;
@@ -8141,5 +8155,5 @@ ShpError.ERROR_UNDEFINED = 0;
 // a 'no data' error is thrown when the byte array runs out of data.
 ShpError.ERROR_NODATA = 1;
 
-var adaptiveCompositeMapBuildTimeStamp = "April 22, 2014 09:49:04 PM";
+var adaptiveCompositeMapBuildTimeStamp = "May 7, 2014 11:01:57 AM";
 		

@@ -252,6 +252,7 @@ $(window).load(function() {"use strict";
     document.getElementById("rotateSmallScaleCheckbox").checked = map.isRotateSmallScale();
     document.getElementById("drawOverlayCheckbox").checked = map.isDrawingOverlay();
     document.getElementById("snapEquatorCheckbox").checked = map.isEquatorSnapping();
+    document.getElementById("renderWireframeCheckbox").checked = map.isRenderingWireframe();
 
     // add a zoom slider
     $(function() {
@@ -460,6 +461,11 @@ $(window).load(function() {"use strict";
         map.render();
     });
 
+    $("#renderWireframeCheckbox").bind("click", function() {
+        map.setRenderWireframe(document.getElementById('renderWireframeCheckbox').checked);
+        map.render();
+    });
+
     $("#snapEquatorCheckbox").bind("click", function() {
         var snap = document.getElementById('snapEquatorCheckbox').checked;
         map.setEquatorSnapping(snap);
@@ -501,4 +507,3 @@ $(window).load(function() {"use strict";
     $("#buildTime").text(adaptiveCompositeMapBuildTimeStamp);
 
 });
-

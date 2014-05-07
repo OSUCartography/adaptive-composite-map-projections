@@ -346,8 +346,8 @@ WebGL.clear = function(gl) {"use strict";
     gl.clear(gl.COLOR_BUFFER_BIT);
 };
 
-WebGL.draw = function(gl, scale, lon0, uniforms, canvas, geometryStrip, shaderProgram) {"use strict";
-    var vPositionIdx;
+WebGL.draw = function(gl, drawWireframe, scale, lon0, uniforms, canvas, geometryStrip, shaderProgram) {"use strict";
+    var vPositionIdx, drawMode = gl.TRIANGLE_STRIP;
 
     gl.clear(gl.COLOR_BUFFER_BIT);
     
@@ -361,5 +361,8 @@ WebGL.draw = function(gl, scale, lon0, uniforms, canvas, geometryStrip, shaderPr
     vPositionIdx = gl.getAttribLocation(shaderProgram, 'vPosition');
     gl.bindBuffer(gl.ARRAY_BUFFER, geometryStrip.buffer);
     gl.vertexAttribPointer(vPositionIdx, 2, gl.FLOAT, false, 0, 0);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, geometryStrip.vertexCount);
+    if(drawWireframe){
+        drawMode = gl.LINE_STRIP;
+    }
+    gl.drawArrays(drawMode, 0, geometryStrip.vertexCount);
 };

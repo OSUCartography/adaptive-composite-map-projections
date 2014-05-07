@@ -129,6 +129,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
     var smallScaleMapProjectionName = "Hammer";
     var rotateSmallScales = true;
     var zoomToMap = true;
+    var renderWireframe = false;
 
     var snapEquator = true;
 
@@ -694,6 +695,14 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
     this.setDrawOverlay = function(draw) {
         drawOverlayCanvas = draw;
     };
+
+    this.isRenderingWireframe = function(){
+        return renderWireframe;
+    }
+
+    this.setRenderWireframe = function(wireframe) {
+        renderWireframe = wireframe;
+    }
 
     this.isEquatorSnapping = function() {
         return snapEquator;
