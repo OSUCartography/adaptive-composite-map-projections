@@ -1,4 +1,4 @@
-/* Build Time: May 7, 2014 11:01:57 AM */
+/* Build Time: May 7, 2014 11:24:01 AM */
 /*globals LambertCylindricalEqualArea, ProjectionFactory */
 function MapEvents(map) {"use strict";
 
@@ -8155,5 +8155,5 @@ ShpError.ERROR_UNDEFINED = 0;
 // a 'no data' error is thrown when the byte array runs out of data.
 ShpError.ERROR_NODATA = 1;
 
-var adaptiveCompositeMapBuildTimeStamp = "May 7, 2014 11:01:57 AM";
+var adaptiveCompositeMapBuildTimeStamp = "May 7, 2014 11:24:01 AM";
 		

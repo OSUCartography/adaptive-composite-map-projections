@@ -444,40 +444,37 @@ $(window).load(function() {"use strict";
         });
     });
 
-    $("#rotateSmallScaleCheckbox").bind("click", function() {
-        var rotateSmallScale = document.getElementById('rotateSmallScaleCheckbox').checked;
-        map.setRotateSmallScales(rotateSmallScale);
+    $("#rotateSmallScaleCheckbox").on("click", function() {
+        map.setRotateSmallScales(this.checked);
         map.render();
         diagram.renderButton(map.getMapScale(), map.getCentralLatitude());
     });
 
-    $("#changeScaleCheckbox").bind("click", function() {
-        var zoom = document.getElementById('changeScaleCheckbox').checked;
-        map.setZoomToMap(zoom);
+    $("#changeScaleCheckbox").on("click", function() {
+        map.setZoomToMap(this.checked);
     });
 
-    $("#drawOverlayCheckbox").bind("click", function() {
-        map.setDrawOverlay(document.getElementById('drawOverlayCheckbox').checked);
+    $("#drawOverlayCheckbox").on("click", function() {
+        map.setDrawOverlay(this.checked);
         map.render();
     });
 
-    $("#renderWireframeCheckbox").bind("click", function() {
-        map.setRenderWireframe(document.getElementById('renderWireframeCheckbox').checked);
+    $("#renderWireframeCheckbox").on("click", function() {
+        map.setRenderWireframe(this.checked);
         map.render();
     });
 
-    $("#snapEquatorCheckbox").bind("click", function() {
-        var snap = document.getElementById('snapEquatorCheckbox').checked;
-        map.setEquatorSnapping(snap);
+    $("#snapEquatorCheckbox").on("click", function() {
+        map.setEquatorSnapping(this.checked);
     });
 
-    $("#mapSelectionMenu").bind("change", function() {
-        var mapId = document.getElementById('mapSelectionMenu').selectedIndex;
+    $("#mapSelectionMenu").on("change", function() {
+        var mapId = this.selectedIndex;
         map.setLayers(getLayers()[mapId]);
         map.render();
     });
 
-    $("#email").bind("click", function() {
+    $("#email").on("click", function() {
 
         var projection, email, subject, infoText, body_center, body_scale, body_projection, map_name, body_name, body_rotate, mailto_link;
 
@@ -496,7 +493,7 @@ $(window).load(function() {"use strict";
         window.location.href = mailto_link;
     });
 
-    $("#lostContextButton").bind("click", function() {
+    $("#lostContextButton").on("click", function() {
         if ( typeof WebGLDebugUtils !== 'undefined') {
             map.getWebGLCanvas().loseContext();
         } else {
