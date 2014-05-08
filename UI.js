@@ -253,6 +253,7 @@ $(window).load(function() {"use strict";
     document.getElementById("drawOverlayCheckbox").checked = map.isDrawingOverlay();
     document.getElementById("snapEquatorCheckbox").checked = map.isEquatorSnapping();
     document.getElementById("renderWireframeCheckbox").checked = map.isRenderingWireframe();
+    document.getElementById("adaptiveResolutionGridCheckbox").checked = map.isAdaptiveResolutionGrid();
 
     // add a zoom slider
     $(function() {
@@ -426,6 +427,24 @@ $(window).load(function() {"use strict";
         writeValue();
     });
 
+    //add slider to adjust the grid cellsize of the adaptive resolution grid in the debug tab
+    $(function() {
+        function action(event, ui) {
+            map.setRasterCellSize(5/ui.value);   
+        }
+
+
+        $("#raster-grid-cell-size-slider").slider({
+            orientation : "horizontal",
+            range : "min",
+            min : 10,
+            max : 1000,
+            value : 1000,
+            change : action,
+            slide : action
+        });
+    });
+
     // make map resizable
     $(document).ready(function() {
         $("#resizable_map_container").resizable({
@@ -461,6 +480,11 @@ $(window).load(function() {"use strict";
 
     $("#renderWireframeCheckbox").on("click", function() {
         map.setRenderWireframe(this.checked);
+        map.render();
+    });
+
+    $("#adaptiveResolutionGridCheckbox").on("click", function() {
+        map.setAdaptiveResolutionGrid(this.checked);
         map.render();
     });
 

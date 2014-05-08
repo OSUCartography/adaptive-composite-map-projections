@@ -1,4 +1,4 @@
-/* Build Time: May 7, 2014 11:24:01 AM */
+/* Build Time: May 7, 2014 07:58:25 PM */
 /*globals LambertCylindricalEqualArea, ProjectionFactory */
 function MapEvents(map) {"use strict";
 
@@ -1211,11 +1211,14 @@ WebGL.setDefaultUniforms = function(gl, program) {"use strict";
     gl.uniform1f(gl.getUniformLocation(program, 'rho0'), 0);
     
     gl.uniform1i(gl.getUniformLocation(program, 'flagStrips'), 0); 
+
+    gl.uniform1f(gl.getUniformLocation(program, 'geoCentralLat'), 0.); 
+    gl.uniform2fv(gl.getUniformLocation(program, 'scale'), [Math.PI, Math.PI/2]);
     
     
 };
 
-WebGL.setUniforms = function(gl, program, scale, lon0, uniforms, canvas) {"use strict";
+WebGL.setUniforms = function(gl, program, useAdaptiveResolutionGrid, scale, mapScale, lon0, GeoBBox, uniforms, canvas) {"use strict";
 
     var viewTransform, i;
     // set default uniform values that are needed, e.g. rotation on sphere
@@ -1223,6 +1226,11 @@ WebGL.setUniforms = function(gl, program, scale, lon0, uniforms, canvas) {"use s
     gl.enableVertexAttribArray(gl.getAttribLocation(program, 'vPosition'));
 
     gl.uniform1f(gl.getUniformLocation(program, 'meridian'), lon0);
+
+    if (useAdaptiveResolutionGrid && mapScale > 2.){
+        gl.uniform1f(gl.getUniformLocation(program, 'geoCentralLat'), (GeoBBox.north + GeoBBox.south)/2.);
+        gl.uniform2fv(gl.getUniformLocation(program, 'scale'), [Math.abs(GeoBBox.east - GeoBBox.west)/2., Math.abs(GeoBBox.north - GeoBBox.south)/2.]);
+    }
 
     // modelViewProjMatrix
     viewTransform = new J3DIMatrix4();
@@ -1244,26 +1252,26 @@ WebGL.setUniforms = function(gl, program, scale, lon0, uniforms, canvas) {"use s
     gl.uniform2f(gl.getUniformLocation(program, 'dXY'), canvas.width / 2, canvas.height / 2);
 };
 
-WebGL.loadGeometry = function(gl) {"use strict";
-    var vertices, cellSize, b, x, y, xIdx, yIdx, startY, stepY, idxCount, vbo, geometryStrip = {};
+WebGL.loadGeometry = function(gl, cellSize) {"use strict";
+    var vertices, b, x, y, xIdx, yIdx, startY, stepY, idxCount, vbo, geometryStrip = {};
 
-    cellSize = 1;
+    //cellSize = 0.005;
     b = {        
-        startX : -180,
-        startY : -90,
-        stepX : cellSize,
+        startX : -1.,
+        startY : -1.,
+        stepX : cellSize/2.,
         stepY : cellSize,
-        countX : 360 / cellSize + 1,
-        countY : 180 / cellSize + 1
+        countX : Math.round(4. / cellSize),
+        countY : Math.round(2. / cellSize) + 1
     }
 
-    vertices = new Float32Array(4 * b.countY * (b.countX - 1));
+    vertices = new Float32Array(4 * b.countY * b.countX);
 
     idxCount = 0;
 
     //generation of one large triangle strip (S-Shaped), with degenerated triangles (NO IBO, just VBO!)
     //compare url for vbo+ibo, http://dan.lecocq.us/wordpress/2009/12/25/triangle-strip-for-grids-a-construction/
-    for(xIdx = 0; xIdx < b.countX - 1; xIdx++){
+    for(xIdx = 0; xIdx < b.countX; xIdx++){
         x = b.startX + xIdx * b.stepX;
 
         if(xIdx % 2 == 0) {
@@ -1278,7 +1286,7 @@ WebGL.loadGeometry = function(gl) {"use strict";
 
         for(yIdx = 0; yIdx < b.countY; yIdx++){
             y = startY + stepY * yIdx;
-            vertices.set([x,y,x+cellSize,y], 4 * idxCount);
+            vertices.set([x,y,x+b.stepX,y], 4 * idxCount);
             idxCount++;
         }
     }
@@ -1383,7 +1391,7 @@ WebGL.clear = function(gl) {"use strict";
     gl.clear(gl.COLOR_BUFFER_BIT);
 };
 
-WebGL.draw = function(gl, drawWireframe, scale, lon0, uniforms, canvas, geometryStrip, shaderProgram) {"use strict";
+WebGL.draw = function(gl, useAdaptiveResolutionGrid, drawWireframe, scale, lon0, uniforms, canvas, geometryStrip, shaderProgram, mapScale, GeoBBox) {"use strict";
     var vPositionIdx, drawMode = gl.TRIANGLE_STRIP;
 
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -1391,9 +1399,9 @@ WebGL.draw = function(gl, drawWireframe, scale, lon0, uniforms, canvas, geometry
     //FIXME hack 
     gl.useProgram(shaderProgram);
     
-    WebGL.setUniforms(gl, shaderProgram, scale, lon0, uniforms, canvas);
+    WebGL.setUniforms(gl, shaderProgram, useAdaptiveResolutionGrid, scale, mapScale, lon0, GeoBBox, uniforms, canvas);
     
-    gl.uniform1f(gl.getUniformLocation(shaderProgram, "cellsize"), geometryStrip.cellSize/180*Math.PI);
+    gl.uniform1f(gl.getUniformLocation(shaderProgram, "cellsize"), geometryStrip.cellSize*Math.PI);
     
     vPositionIdx = gl.getAttribLocation(shaderProgram, 'vPosition');
     gl.bindBuffer(gl.ARRAY_BUFFER, geometryStrip.buffer);
@@ -3994,7 +4002,8 @@ function RasterLayer(url) {"use strict";
         gl.uniform1i(gl.getUniformLocation(shaderProgram, "texture"), 0);
         var uniforms = this.projection.getShaderUniforms();
         stats.begin();
-        WebGL.draw(gl, map.isRenderingWireframe(), this.mapScale / this.refScaleFactor * this.glScale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram);
+        //WebGL.draw(gl, map.isRenderingWireframe(), this.mapScale / this.refScaleFactor * this.glScale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram);
+        WebGL.draw(gl, map.isAdaptiveResolutionGrid(), map.isRenderingWireframe(), this.mapScale / this.refScaleFactor * this.glScale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram, map.getMapScale(), this.visibleGeographicBoundingBoxCenteredOnLon0);
         stats.end();
 		//document.getElementById("FPS").innerHTML = "<b>Rendering speed:</b> " + stats.ms() + " ms, " + stats.fps() + " fps.";
     };
@@ -4012,11 +4021,14 @@ function RasterLayer(url) {"use strict";
         gl.clearColor(0, 0, 0, 0);
         shaderProgram = WebGL.loadShaderProgram(gl, 'shader/vs/forward.vert', 'shader/fs/forward.frag');
         texture = gl.createTexture();
-        sphereGeometry = WebGL.loadGeometry(gl);
+        sphereGeometry = WebGL.loadGeometry(gl, map.getRasterCellSize());
         WebGL.loadStaticTexture(gl, url, map, texture);
         WebGL.enableAnisotropicFiltering(gl, texture);
     }
 
+    this.reloadGeometry = function(){
+        sphereGeometry = WebGL.loadGeometry(gl, map.getRasterCellSize());
+    };
 
     this.load = function(m) {
         map = m;
@@ -4498,10 +4510,13 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
     // zoom level relativ to canvas size. 1: entire map.
     var mapScale = 0.95;
 
+    var rasterCellSize = 0.005;
+
     var smallScaleMapProjectionName = "Hammer";
     var rotateSmallScales = true;
     var zoomToMap = true;
     var renderWireframe = false;
+    var adaptiveResolutionGrid = false;
 
     var snapEquator = true;
 
@@ -5076,6 +5091,14 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
         renderWireframe = wireframe;
     }
 
+    this.isAdaptiveResolutionGrid = function(){
+        return adaptiveResolutionGrid;
+    }
+
+    this.setAdaptiveResolutionGrid = function(adaptiveresolutiongrid) {
+        adaptiveResolutionGrid = adaptiveresolutiongrid;
+    }
+
     this.isEquatorSnapping = function() {
         return snapEquator;
     };
@@ -5099,6 +5122,27 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
 
     this.getParent = function() {
         return parent;
+    };
+
+    this.getRasterCellSize = function() {
+        return rasterCellSize;
+    };
+
+    this.setRasterCellSize = function(cellSize) {
+        var layer, nLayers, i;
+        rasterCellSize = cellSize;
+
+        if (layers) {
+            for ( i = 0, nLayers = layers.length; i < nLayers; i += 1) {
+                layer = layers[i];
+                if ( layer instanceof RasterLayer ) {
+                    layer.reloadGeometry();
+                }
+            }
+        }
+        
+        this.render();
+
     };
 }
 /*globals formatLatitude*/
@@ -8155,5 +8199,5 @@ ShpError.ERROR_UNDEFINED = 0;
 // a 'no data' error is thrown when the byte array runs out of data.
 ShpError.ERROR_NODATA = 1;
 
-var adaptiveCompositeMapBuildTimeStamp = "May 7, 2014 11:24:01 AM";
+var adaptiveCompositeMapBuildTimeStamp = "May 7, 2014 07:58:25 PM";
 		

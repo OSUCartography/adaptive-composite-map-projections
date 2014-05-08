@@ -59,6 +59,12 @@ uniform float albersC;
 uniform float albersRho0;
 uniform float albersN;
 
+// geographic bounding box scale
+uniform vec2 scale;
+
+// central latitude of geographic extent
+uniform float geoCentralLat;
+
 // spherical rotation
 vec2 transformSphere(in vec2 lonLat) {
 	vec2 sinLonLat = sin(lonLat);
@@ -265,7 +271,8 @@ vec2 projectionMix(in vec2 lonLat) {
 
 void main(void) {
 	vec2 xy, lonLatTransformed;
-	vec2 lonLat = radians(vPosition);
+	//vec2 lonLat = radians(vPosition);
+    vec2 lonLat = vPosition * scale + vec2(0, geoCentralLat);
     
     // FIXME a tentative solution for the transformation from Lambert azimuthal to Mercator for square format maps
     // first rotate geometry, then project

@@ -126,10 +126,13 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
     // zoom level relativ to canvas size. 1: entire map.
     var mapScale = 0.95;
 
+    var rasterCellSize = 0.005;
+
     var smallScaleMapProjectionName = "Hammer";
     var rotateSmallScales = true;
     var zoomToMap = true;
     var renderWireframe = false;
+    var adaptiveResolutionGrid = false;
 
     var snapEquator = true;
 
@@ -704,6 +707,14 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
         renderWireframe = wireframe;
     }
 
+    this.isAdaptiveResolutionGrid = function(){
+        return adaptiveResolutionGrid;
+    }
+
+    this.setAdaptiveResolutionGrid = function(adaptiveresolutiongrid) {
+        adaptiveResolutionGrid = adaptiveresolutiongrid;
+    }
+
     this.isEquatorSnapping = function() {
         return snapEquator;
     };
@@ -727,5 +738,26 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
 
     this.getParent = function() {
         return parent;
+    };
+
+    this.getRasterCellSize = function() {
+        return rasterCellSize;
+    };
+
+    this.setRasterCellSize = function(cellSize) {
+        var layer, nLayers, i;
+        rasterCellSize = cellSize;
+
+        if (layers) {
+            for ( i = 0, nLayers = layers.length; i < nLayers; i += 1) {
+                layer = layers[i];
+                if ( layer instanceof RasterLayer ) {
+                    layer.reloadGeometry();
+                }
+            }
+        }
+        
+        this.render();
+
     };
 }

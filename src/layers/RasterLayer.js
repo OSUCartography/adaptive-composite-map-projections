@@ -31,7 +31,8 @@ function RasterLayer(url) {"use strict";
         gl.uniform1i(gl.getUniformLocation(shaderProgram, "texture"), 0);
         var uniforms = this.projection.getShaderUniforms();
         stats.begin();
-        WebGL.draw(gl, map.isRenderingWireframe(), this.mapScale / this.refScaleFactor * this.glScale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram);
+        //WebGL.draw(gl, map.isRenderingWireframe(), this.mapScale / this.refScaleFactor * this.glScale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram);
+        WebGL.draw(gl, map.isAdaptiveResolutionGrid(), map.isRenderingWireframe(), this.mapScale / this.refScaleFactor * this.glScale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram, map.getMapScale(), this.visibleGeographicBoundingBoxCenteredOnLon0);
         stats.end();
 		//document.getElementById("FPS").innerHTML = "<b>Rendering speed:</b> " + stats.ms() + " ms, " + stats.fps() + " fps.";
     };
@@ -49,11 +50,14 @@ function RasterLayer(url) {"use strict";
         gl.clearColor(0, 0, 0, 0);
         shaderProgram = WebGL.loadShaderProgram(gl, 'shader/vs/forward.vert', 'shader/fs/forward.frag');
         texture = gl.createTexture();
-        sphereGeometry = WebGL.loadGeometry(gl);
+        sphereGeometry = WebGL.loadGeometry(gl, map.getRasterCellSize());
         WebGL.loadStaticTexture(gl, url, map, texture);
         WebGL.enableAnisotropicFiltering(gl, texture);
     }
 
+    this.reloadGeometry = function(){
+        sphereGeometry = WebGL.loadGeometry(gl, map.getRasterCellSize());
+    };
 
     this.load = function(m) {
         map = m;

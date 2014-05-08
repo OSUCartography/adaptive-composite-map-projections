@@ -149,6 +149,11 @@ canvas {
 	margin-left: 10px;
 	width: 400px;
 }
+
+#raster-grid-cell-size-slider {
+	width: 250px;
+}
+
 #mapSelectionMenu {
 	margin-top: 10px;
 	margin-bottom: 10px;
