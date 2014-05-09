@@ -1,4 +1,4 @@
-/* Build Time: May 7, 2014 07:58:25 PM */
+/* Build Time: May 8, 2014 08:02:06 PM */
 /*globals LambertCylindricalEqualArea, ProjectionFactory */
 function MapEvents(map) {"use strict";
 
@@ -1829,6 +1829,9 @@ function Graticule(style, scaleVisibility, poleRadiusPx, poleDistPx) {"use stric
 	// if the graticule spacing is larger than this value, no meridians are pruned at poles.
 	var MIN_PRUNING_SPACING = 30 / 180 * Math.PI;
 	var MAX_RECURSION = 20;
+
+	// the dots representing poles are scaled by a varying factor. This is the minium scale factor.
+	var MIN_RELATIVE_POLE_RADIUS = 0.3;
 	
 	// intermediate points are added to graticule lines if the curved line deviates from
 	// a straight line by more than this distance. In pixels.
@@ -1973,10 +1976,11 @@ function Graticule(style, scaleVisibility, poleRadiusPx, poleDistPx) {"use stric
 		var xy = [], r;
 		r = poleRadiusPx / this.mapScale;
 
-		// reduce the radius for small scale
-		// FIXME this should be relative to the graticule height
-		// FIXME this should be definable in MapContent
-		r = Math.min(r, this.canvas.height / 1000);
+		// reduce the radius for scales smaller than 1
+		if (this.relativeMapScale < 1) {
+			// scale radius with MIN_RELATIVE_POLE_RADIUS for a scale of 1.
+			r *= (MIN_RELATIVE_POLE_RADIUS + (1 - MIN_RELATIVE_POLE_RADIUS) * this.relativeMapScale);
+		}
 
 		if (this.rotation) {
 			this.rotation.transform(0, lat, xy);
@@ -8199,5 +8203,5 @@ ShpError.ERROR_UNDEFINED = 0;
 // a 'no data' error is thrown when the byte array runs out of data.
 ShpError.ERROR_NODATA = 1;
 
-var adaptiveCompositeMapBuildTimeStamp = "May 7, 2014 07:58:25 PM";
+var adaptiveCompositeMapBuildTimeStamp = "May 8, 2014 08:02:06 PM";
 		
