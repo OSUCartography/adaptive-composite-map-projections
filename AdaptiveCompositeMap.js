@@ -1,4 +1,4 @@
-/* Build Time: May 8, 2014 08:02:06 PM */
+/* Build Time: May 9, 2014 03:11:49 PM */
 /*globals LambertCylindricalEqualArea, ProjectionFactory */
 function MapEvents(map) {"use strict";
 
@@ -1252,10 +1252,10 @@ WebGL.setUniforms = function(gl, program, useAdaptiveResolutionGrid, scale, mapS
     gl.uniform2f(gl.getUniformLocation(program, 'dXY'), canvas.width / 2, canvas.height / 2);
 };
 
-WebGL.loadGeometry = function(gl, cellSize) {"use strict";
-    var vertices, b, x, y, xIdx, yIdx, startY, stepY, idxCount, vbo, geometryStrip = {};
+WebGL.loadGeometry = function(gl, resolution) {"use strict";
+    var vertices, b, x, y, xIdx, yIdx, startY, stepY, idxCount, vbo, cellSize, geometryStrip = {};
 
-    //cellSize = 0.005;
+    cellSize = 2. / resolution;
     b = {        
         startX : -1.,
         startY : -1.,
@@ -4025,13 +4025,13 @@ function RasterLayer(url) {"use strict";
         gl.clearColor(0, 0, 0, 0);
         shaderProgram = WebGL.loadShaderProgram(gl, 'shader/vs/forward.vert', 'shader/fs/forward.frag');
         texture = gl.createTexture();
-        sphereGeometry = WebGL.loadGeometry(gl, map.getRasterCellSize());
+        sphereGeometry = WebGL.loadGeometry(gl, map.getGeometryResolution());
         WebGL.loadStaticTexture(gl, url, map, texture);
         WebGL.enableAnisotropicFiltering(gl, texture);
     }
 
     this.reloadGeometry = function(){
-        sphereGeometry = WebGL.loadGeometry(gl, map.getRasterCellSize());
+        sphereGeometry = WebGL.loadGeometry(gl, map.getGeometryResolution());
     };
 
     this.load = function(m) {
@@ -4514,7 +4514,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
     // zoom level relativ to canvas size. 1: entire map.
     var mapScale = 0.95;
 
-    var rasterCellSize = 0.005;
+    var geometryResolution = 500;
 
     var smallScaleMapProjectionName = "Hammer";
     var rotateSmallScales = true;
@@ -5128,13 +5128,13 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
         return parent;
     };
 
-    this.getRasterCellSize = function() {
-        return rasterCellSize;
+    this.getGeometryResolution = function() {
+        return geometryResolution;
     };
 
-    this.setRasterCellSize = function(cellSize) {
+    this.setGeometryResolution = function(resolution) {
         var layer, nLayers, i;
-        rasterCellSize = cellSize;
+        geometryResolution = resolution;
 
         if (layers) {
             for ( i = 0, nLayers = layers.length; i < nLayers; i += 1) {
@@ -8203,5 +8203,5 @@ ShpError.ERROR_UNDEFINED = 0;
 // a 'no data' error is thrown when the byte array runs out of data.
 ShpError.ERROR_NODATA = 1;
 
-var adaptiveCompositeMapBuildTimeStamp = "May 8, 2014 08:02:06 PM";
+var adaptiveCompositeMapBuildTimeStamp = "May 9, 2014 03:11:49 PM";
 		

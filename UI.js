@@ -430,16 +430,16 @@ $(window).load(function() {"use strict";
     //add slider to adjust the grid cellsize of the adaptive resolution grid in the debug tab
     $(function() {
         function action(event, ui) {
-            map.setRasterCellSize(5/ui.value);   
+            map.setGeometryResolution(ui.value);   
         }
 
 
-        $("#raster-grid-cell-size-slider").slider({
+        $("#geometry-resolution-slider").slider({
             orientation : "horizontal",
             range : "min",
-            min : 10,
-            max : 1000,
-            value : 1000,
+            min : 2,
+            max : 500,
+            value : 500,
             change : action,
             slide : action
         });

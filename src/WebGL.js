@@ -215,10 +215,10 @@ WebGL.setUniforms = function(gl, program, useAdaptiveResolutionGrid, scale, mapS
     gl.uniform2f(gl.getUniformLocation(program, 'dXY'), canvas.width / 2, canvas.height / 2);
 };
 
-WebGL.loadGeometry = function(gl, cellSize) {"use strict";
-    var vertices, b, x, y, xIdx, yIdx, startY, stepY, idxCount, vbo, geometryStrip = {};
+WebGL.loadGeometry = function(gl, resolution) {"use strict";
+    var vertices, b, x, y, xIdx, yIdx, startY, stepY, idxCount, vbo, cellSize, geometryStrip = {};
 
-    //cellSize = 0.005;
+    cellSize = 2. / resolution;
     b = {        
         startX : -1.,
         startY : -1.,

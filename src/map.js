@@ -126,7 +126,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
     // zoom level relativ to canvas size. 1: entire map.
     var mapScale = 0.95;
 
-    var rasterCellSize = 0.005;
+    var geometryResolution = 500;
 
     var smallScaleMapProjectionName = "Hammer";
     var rotateSmallScales = true;
@@ -740,13 +740,13 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
         return parent;
     };
 
-    this.getRasterCellSize = function() {
-        return rasterCellSize;
+    this.getGeometryResolution = function() {
+        return geometryResolution;
     };
 
-    this.setRasterCellSize = function(cellSize) {
+    this.setGeometryResolution = function(resolution) {
         var layer, nLayers, i;
-        rasterCellSize = cellSize;
+        geometryResolution = resolution;
 
         if (layers) {
             for ( i = 0, nLayers = layers.length; i < nLayers; i += 1) {

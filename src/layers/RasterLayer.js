@@ -50,13 +50,13 @@ function RasterLayer(url) {"use strict";
         gl.clearColor(0, 0, 0, 0);
         shaderProgram = WebGL.loadShaderProgram(gl, 'shader/vs/forward.vert', 'shader/fs/forward.frag');
         texture = gl.createTexture();
-        sphereGeometry = WebGL.loadGeometry(gl, map.getRasterCellSize());
+        sphereGeometry = WebGL.loadGeometry(gl, map.getGeometryResolution());
         WebGL.loadStaticTexture(gl, url, map, texture);
         WebGL.enableAnisotropicFiltering(gl, texture);
     }
 
     this.reloadGeometry = function(){
-        sphereGeometry = WebGL.loadGeometry(gl, map.getRasterCellSize());
+        sphereGeometry = WebGL.loadGeometry(gl, map.getGeometryResolution());
     };
 
     this.load = function(m) {
