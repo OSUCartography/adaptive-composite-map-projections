@@ -70,4 +70,10 @@ function LambertAzimuthalEqualAreaOblique() {"use strict";
     this.getID = function() {
         return -2;
     };
+    
+    /* CHANGE START */
+    this.getPoleLat = function() {
+		return Math.PI - lat0;
+	};
+	/* CHANGE ENDS */
 }

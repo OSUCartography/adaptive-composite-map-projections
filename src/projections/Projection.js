@@ -457,7 +457,6 @@ ProjectionFactory.create = function(conf) {
         t = new ShiftedProjection(azimuthalProj, dy);
         centerLonLat = [];
         t.inverse(conf.centerXY[0], conf.centerXY[1], centerLonLat);
-
         // compute the rotation angle applied to the sphere to recenter the map
         azimuthalProj.initialize({
             lat0 : centerLonLat[1]

@@ -6,42 +6,52 @@
 
 function ShiftedProjection(proj, dy) {"use strict";
 
-    this.toString = function() {
-        var txt = proj.toString();
-        //txt += " (vertically shifted)";
-        return txt;
-    };
+	this.toString = function() {
+		var txt = proj.toString();
+		//txt += " (vertically shifted)";
+		return txt;
+	};
 
-    this.isEqualArea = function() {
-        return proj.isEqualArea();
-    };
-    
-    this.forward = function(lon, lat, xy) {
-    	proj.forward(lon, lat, xy);
-    	// for the forward, the vertical shift is applied when drawing the map
-    };
+	this.isEqualArea = function() {
+		return proj.isEqualArea();
+	};
 
-    this.inverse = function(x, y, lonlat) {
-        y -= dy;
-        proj.inverse(x, y, lonlat);
-    };
+	this.forward = function(lon, lat, xy) {
+		proj.forward(lon, lat, xy);
+		// for the forward, the vertical shift is applied when drawing the map
+	};
 
-    this.getOutline = function() {
-        return proj.getOutline();
-    };
+	this.inverse = function(x, y, lonlat) {
+		y -= dy;
+		proj.inverse(x, y, lonlat);
+	};
 
-    this.getShaderUniforms = function() {
+	this.getOutline = function() {
+		return proj.getOutline();
+	};
 
-        var uniforms = {};
-        if (proj && proj.getShaderUniforms) {
-            uniforms = proj.getShaderUniforms();
-        }
-        uniforms.falseNorthing = dy;
-        return uniforms;
-    };
+	this.getShaderUniforms = function() {
 
-    this.getFalseNorthing = function() {
-        return dy;
-    };
+		var uniforms = {};
+		if (proj && proj.getShaderUniforms) {
+			uniforms = proj.getShaderUniforms();
+		}
+		uniforms.falseNorthing = dy;
+		return uniforms;
+	};
+
+	this.getFalseNorthing = function() {
+		return dy;
+	};
+
+	/* CHANGE START */
+	this.getPoleLat = function() {
+		var poleLat = Math.PI / 2;
+		if ( typeof proj.getPoleLat != 'undefined') {
+			poleLat = proj.getPoleLat();
+		}
+		return poleLat;
+	};
+	/* CHANGE ENDS */
 
 }
