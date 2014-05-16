@@ -4,6 +4,7 @@ function Mollweide() {"use strict";
     var TOLERANCE = 1.0e-7;
     var ONE_TOL = 1.00000000000001;
     var HALFPI = Math.PI / 2;
+    var SQRT2 = Math.sqrt(2);
     var cx, cy, cp;
 
     this.toString = function() {
@@ -43,44 +44,12 @@ function Mollweide() {"use strict";
     };
 
     this.inverse = function(x, y, lonlat) {
-        var abs, lon, lat;
-        y = y / cy;
-        abs = Math.abs(y);
-        // arcsine with tolerance
-        if (abs > 1) {
-            if (abs >= ONE_TOL) {
-                lonlat[0] = NaN;
-                lonlat[1] = NaN;
-                return;
-            }
-            lat = y < 0 ? -HALFPI : HALFPI;
-        } else {
-            lat = Math.asin(y);
-        }
-
-        lon = x / (cx * Math.cos(lat));
-        if (lon > Math.PI || lon < -Math.PI) {
-            lonlat[0] = NaN;
-            lonlat[1] = NaN;
-            return;
-        }
-        
-        lonlat[0] = lon;
-        lat += lat;
-        lat = (lat + Math.sin(lat)) / cp;
-
-        // sarcsine with tolerance
-        abs = Math.abs(lat);
-        if (abs >= 1) {
-            if (abs > ONE_TOL) {
-                lonlat[0] = NaN;
-                lonlat[1] = NaN;
-            } else {
-                lonlat[1] = lat < 0 ? -HALFPI : HALFPI;
-            }
-        } else {
-            lonlat[1] = Math.asin(lat);
-        }
+        var theta, sinTheta, cosTheta;
+        sinTheta = y / SQRT2;
+        theta = Math.asin(sinTheta);
+        cosTheta = Math.cos(theta);
+        lonlat[0] = x / (2 * SQRT2) * Math.PI / cosTheta;
+        lonlat[1] = Math.asin(2 * (theta + sinTheta * cosTheta) / Math.PI);
     };
 
     this.getOutline = function() {
