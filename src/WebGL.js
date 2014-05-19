@@ -5,8 +5,7 @@ function WebGL() {"use strict";
 
 /**
  * Creates a webgl context. From webgl-utils.js
- * @param {!Canvas} canvas The canvas tag to get context
- *     from.
+ * @param {!Canvas} canvas The canvas tag to get context from.
  * @return {!WebGLContext} The created context.
  */
 WebGL.create3DContext = function(canvas, opt_attribs) {"use strict";
@@ -134,7 +133,6 @@ WebGL.addContextLostAndRestoredHandler = function(canvas, contextRestoredHandler
 };
 
 WebGL.loadShaderProgram = function(gl, vertexShaderURL, fragmentShaderURL) {"use strict";
-    // FIXME should be asynchronous
     var vertexShader, fragmentShader, shaderProgram;
 
     vertexShader = WebGL.loadShader(gl, vertexShaderURL);
@@ -144,9 +142,7 @@ WebGL.loadShaderProgram = function(gl, vertexShaderURL, fragmentShaderURL) {"use
     gl.attachShader(shaderProgram, fragmentShader);
     gl.linkProgram(shaderProgram);
     gl.useProgram(shaderProgram);
-
     WebGL.setDefaultUniforms(gl, shaderProgram);
-
     return shaderProgram;
 };
 

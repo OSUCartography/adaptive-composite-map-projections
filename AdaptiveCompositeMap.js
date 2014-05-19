@@ -1,4 +1,4 @@
-/* Build Time: May 19, 2014 02:18:20 PM */
+/* Build Time: May 19, 2014 03:00:12 PM */
 /*globals LambertCylindricalEqualArea, ProjectionFactory */
 function MapEvents(map) {"use strict";
 
@@ -901,8 +901,9 @@ function resizeCanvasElement(canvas, desiredWidthInCSSPixels, desiredHeightInCSS
     // FIXME disable for now, layers need to be updated first
     devicePixelRatio = 1;
 
-    canvas.width = desiredWidthInCSSPixels * devicePixelRatio;
-    canvas.height = desiredHeightInCSSPixels * devicePixelRatio;
+	console.log(desiredWidthInCSSPixels * devicePixelRatio, desiredHeightInCSSPixels * devicePixelRatio);
+    canvas.width = ""+desiredWidthInCSSPixels;// * devicePixelRatio;
+    canvas.height = ""+desiredHeightInCSSPixels;// * devicePixelRatio;
 }
 
 // http://stackoverflow.com/questions/646628/javascript-startswith
@@ -3972,20 +3973,20 @@ PolylineLayer.intermediateGreatCirclePoint = function(lon1, lat1, lon2, lat2, f,
     pt[1] = Math.atan2(z, Math.sqrt(x * x + y * y));
     pt[0] = Math.atan2(y, x);
 }; 
-/*globals WebGL */
+/*globals WebGL, Stats */
 
 function RasterLayer(url) {"use strict";
 
     //RasterLayer.prototype = new AbstractLayer();
     //AbstractLayer.call(this, null /*style*/, null /*scaleVisibility*/);
 
-    var gl = null, map, texture, sphereGeometry, shaderProgram;
+    var gl = null, map, texture, sphereGeometry, shaderProgram, stats;
     
 	//Measuring time
-	var stats = new Stats();
+	stats = new Stats();
     //stats.setMode( 2 );
-    //document.body.appendChild( stats.domElement );
-   
+
+	// FIXME   
 	document.getElementById("FPS").appendChild( stats.domElement );
 
     this.canvas = null;
@@ -4005,12 +4006,10 @@ function RasterLayer(url) {"use strict";
         gl.uniform1i(gl.getUniformLocation(shaderProgram, "texture"), 0);
         var uniforms = this.projection.getShaderUniforms();
         stats.begin();
-        //WebGL.draw(gl, map.isRenderingWireframe(), this.mapScale / this.refScaleFactor * this.glScale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram);
         /* CHANGE START */
         WebGL.draw(gl, map.isAdaptiveResolutionGrid(), map.isRenderingWireframe(), this.mapScale / this.refScaleFactor * this.glScale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram, map.getMapScale(), this.visibleGeometryBoundingBoxCenteredOnLon0);
         /* CHANGE ENDS */
         stats.end();
-		//document.getElementById("FPS").innerHTML = "<b>Rendering speed:</b> " + stats.ms() + " ms, " + stats.fps() + " fps.";
     };
 
     this.clear = function() {
@@ -4400,7 +4399,7 @@ var CONIC_STD_PARALLELS_FRACTION = 1 / 6;
 // is considered to be square.
 var formatRatioLimit = 0.8;
 
-function mouseToCanvasCoordinates(e, parent) {
+function mouseToCanvasCoordinates(e, parent) { "use strict";
 	// FIXME there should be a better way for this
 	var node, x = e.clientX, y = e.clientY;
 
@@ -4419,7 +4418,7 @@ function mouseToCanvasCoordinates(e, parent) {
 	};
 }
 
-function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionChangeListener) {"use strict";
+function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChangeListener) {"use strict";
 
 	// scale if map is not zoomed
 	var CONSTANT_SCALE = 0.5;
@@ -4435,7 +4434,6 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
 
 	// FIXME should not be global
 	map = this;
-	var layers = mapLayers;
 
 	// if true, the center of the map and the position of standard parallels are drawn
 	var drawOverlayCanvas = false;
@@ -4806,12 +4804,14 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
 	}
 
 	function clone(obj) {
-		if (null == obj || "object" != typeof obj)
+		if (null === obj || "object" !== typeof obj) {
 			return obj;
-		var copy = obj.constructor();
-		for (var attr in obj) {
-			if (obj.hasOwnProperty(attr))
+		}
+		var attr, copy = obj.constructor();
+		for (attr in obj) {
+			if (obj.hasOwnProperty(attr)) {
 				copy[attr] = obj[attr];
+			}
 		}
 		return copy;
 	}
@@ -4819,7 +4819,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
 	/* CHANGE ENDS */
 
 	this.render = function(fastRender) {
-		if (!layers) {
+		if (!Array.isArray(layers)) {
 			return;
 		}
 
@@ -4997,7 +4997,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
 		resizeCanvasElement(vectorCanvas, w, h);
 		resizeCanvasElement(overlayCanvas, w, h);
 
-		if (layers) {
+		if (Array.isArray(layers)) {
 			for ( layerID = 0; layerID < layers.length; layerID += 1) {
 				if (layers[layerID].resize) {
 					layers[layerID].resize(w, h);
@@ -5039,7 +5039,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
 		var layer, nLayers, i;
 
 		//  load map layer data
-		if (layers) {
+		if (Array.isArray(layers)) {
 			for ( i = 0, nLayers = layers.length; i < nLayers; i += 1) {
 				layer = layers[i];
 				if ( layer instanceof RasterLayer || layer instanceof VideoLayer) {
@@ -5088,7 +5088,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
 	 */
 	this.setLayers = function(mapLayers) {
 		var i, layer;
-		if (layers) {
+		if (Array.isArray(layers)) {
 			for ( i = 0; i < layers.length; i += 1) {
 				layer = layers[i];
 				if ( typeof (layer.clear) === 'function') {
@@ -5173,19 +5173,19 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
 
 	this.isRenderingWireframe = function() {
 		return renderWireframe;
-	}
+	};
 
 	this.setRenderWireframe = function(wireframe) {
 		renderWireframe = wireframe;
-	}
+	};
 
 	this.isAdaptiveResolutionGrid = function() {
 		return adaptiveResolutionGrid;
-	}
+	};
 
 	this.setAdaptiveResolutionGrid = function(adaptiveresolutiongrid) {
 		adaptiveResolutionGrid = adaptiveresolutiongrid;
-	}
+	};
 
 	this.isEquatorSnapping = function() {
 		return snapEquator;
@@ -5220,7 +5220,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
 		var layer, nLayers, i;
 		geometryResolution = resolution;
 
-		if (layers) {
+		if (Array.isArray(layers)) {
 			for ( i = 0, nLayers = layers.length; i < nLayers; i += 1) {
 				layer = layers[i];
 				if ( layer instanceof RasterLayer) {
@@ -5230,7 +5230,6 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
 		}
 
 		this.render();
-
 	};
 }
 /*globals formatLatitude*/
@@ -8276,5 +8275,5 @@ ShpError.ERROR_UNDEFINED = 0;
 // a 'no data' error is thrown when the byte array runs out of data.
 ShpError.ERROR_NODATA = 1;
 
-var adaptiveCompositeMapBuildTimeStamp = "May 19, 2014 02:18:20 PM";
+var adaptiveCompositeMapBuildTimeStamp = "May 19, 2014 03:00:12 PM";
 		

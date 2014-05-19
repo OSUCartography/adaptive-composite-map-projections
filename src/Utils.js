@@ -76,7 +76,8 @@ function resizeCanvasElement(canvas, desiredWidthInCSSPixels, desiredHeightInCSS
 
     // FIXME disable for now, layers need to be updated first
     devicePixelRatio = 1;
-
+	
+	// FIXME crash on Mac Firefox 
     canvas.width = desiredWidthInCSSPixels * devicePixelRatio;
     canvas.height = desiredHeightInCSSPixels * devicePixelRatio;
 }

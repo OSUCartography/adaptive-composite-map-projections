@@ -11,7 +11,7 @@ var CONIC_STD_PARALLELS_FRACTION = 1 / 6;
 // is considered to be square.
 var formatRatioLimit = 0.8;
 
-function mouseToCanvasCoordinates(e, parent) {
+function mouseToCanvasCoordinates(e, parent) { "use strict";
 	// FIXME there should be a better way for this
 	var node, x = e.clientX, y = e.clientY;
 
@@ -30,7 +30,7 @@ function mouseToCanvasCoordinates(e, parent) {
 	};
 }
 
-function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionChangeListener) {"use strict";
+function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChangeListener) {"use strict";
 
 	// scale if map is not zoomed
 	var CONSTANT_SCALE = 0.5;
@@ -46,7 +46,6 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
 
 	// FIXME should not be global
 	map = this;
-	var layers = mapLayers;
 
 	// if true, the center of the map and the position of standard parallels are drawn
 	var drawOverlayCanvas = false;
@@ -417,12 +416,14 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
 	}
 
 	function clone(obj) {
-		if (null == obj || "object" != typeof obj)
+		if (null === obj || "object" !== typeof obj) {
 			return obj;
-		var copy = obj.constructor();
-		for (var attr in obj) {
-			if (obj.hasOwnProperty(attr))
+		}
+		var attr, copy = obj.constructor();
+		for (attr in obj) {
+			if (obj.hasOwnProperty(attr)) {
 				copy[attr] = obj[attr];
+			}
 		}
 		return copy;
 	}
@@ -430,7 +431,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
 	/* CHANGE ENDS */
 
 	this.render = function(fastRender) {
-		if (!layers) {
+		if (!Array.isArray(layers)) {
 			return;
 		}
 
@@ -608,7 +609,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
 		resizeCanvasElement(vectorCanvas, w, h);
 		resizeCanvasElement(overlayCanvas, w, h);
 
-		if (layers) {
+		if (Array.isArray(layers)) {
 			for ( layerID = 0; layerID < layers.length; layerID += 1) {
 				if (layers[layerID].resize) {
 					layers[layerID].resize(w, h);
@@ -650,7 +651,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
 		var layer, nLayers, i;
 
 		//  load map layer data
-		if (layers) {
+		if (Array.isArray(layers)) {
 			for ( i = 0, nLayers = layers.length; i < nLayers; i += 1) {
 				layer = layers[i];
 				if ( layer instanceof RasterLayer || layer instanceof VideoLayer) {
@@ -699,7 +700,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
 	 */
 	this.setLayers = function(mapLayers) {
 		var i, layer;
-		if (layers) {
+		if (Array.isArray(layers)) {
 			for ( i = 0; i < layers.length; i += 1) {
 				layer = layers[i];
 				if ( typeof (layer.clear) === 'function') {
@@ -784,19 +785,19 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
 
 	this.isRenderingWireframe = function() {
 		return renderWireframe;
-	}
+	};
 
 	this.setRenderWireframe = function(wireframe) {
 		renderWireframe = wireframe;
-	}
+	};
 
 	this.isAdaptiveResolutionGrid = function() {
 		return adaptiveResolutionGrid;
-	}
+	};
 
 	this.setAdaptiveResolutionGrid = function(adaptiveresolutiongrid) {
 		adaptiveResolutionGrid = adaptiveresolutiongrid;
-	}
+	};
 
 	this.isEquatorSnapping = function() {
 		return snapEquator;
@@ -831,7 +832,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
 		var layer, nLayers, i;
 		geometryResolution = resolution;
 
-		if (layers) {
+		if (Array.isArray(layers)) {
 			for ( i = 0, nLayers = layers.length; i < nLayers; i += 1) {
 				layer = layers[i];
 				if ( layer instanceof RasterLayer) {
@@ -841,6 +842,5 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
 		}
 
 		this.render();
-
 	};
 }
