@@ -1,4 +1,4 @@
-/* Build Time: May 16, 2014 03:17:28 PM */
+/* Build Time: May 19, 2014 01:55:03 PM */
 /*globals LambertCylindricalEqualArea, ProjectionFactory */
 function MapEvents(map) {"use strict";
 
@@ -4710,8 +4710,8 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
 	}
 
 	function visibleGeographicBoundingBoxCenteredOnLon0(projection) {
-		// FIXME
-		var INC = 10,
+		// increment in pixels
+		var INC = 5,
 
 		// bounding box
 		bb = {
@@ -4719,18 +4719,21 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
 			south : Number.MAX_VALUE,
 			east : -Number.MAX_VALUE,
 			north : -Number.MAX_VALUE
-		}, x, y, lonlat;
+		}, x, y, lonlat, southPoleVisible, northPoleVisible;
 
+		southPoleVisible = isSouthPoleVisible(projection);
+		northPoleVisible = isNorthPoleVisible(projection);
+		
 		// if a pole is visible, the complete longitude range is visible on the map
-		if (isNorthPoleVisible(projection) || isSouthPoleVisible(projection)) {
+		if (northPoleVisible || southPoleVisible) {
 			bb.west = -Math.PI + mapCenter.lon0;
 			bb.east = Math.PI + mapCenter.lon0;
 		}
 
-		if (isSouthPoleVisible(projection)) {
+		if (southPoleVisible) {
 			bb.south = -Math.PI / 2;
 		}
-		if (isNorthPoleVisible(projection)) {
+		if (northPoleVisible) {
 			bb.north = Math.PI / 2;
 		}
 
@@ -4749,6 +4752,10 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
 			lonlat = map.canvasXY2LonLat(canvasWidth, y, projection);
 			extendRect(bb, lonlat[0], lonlat[1]);
 		}
+
+		// bottom right corner
+		lonlat = map.canvasXY2LonLat(canvasWidth, canvasHeight, projection);
+		extendRect(bb, lonlat[0], lonlat[1]);
 
 		// center on central longitude
 		bb.west -= mapCenter.lon0;
@@ -6427,9 +6434,6 @@ function Mollweide() {"use strict";
 
     var MAX_ITER = 10;
     var TOLERANCE = 1.0e-7;
-    var ONE_TOL = 1.00000000000001;
-    var HALFPI = Math.PI / 2;
-    var SQRT2 = Math.sqrt(2);
     var cx, cy, cp;
 
     this.toString = function() {
@@ -6468,12 +6472,14 @@ function Mollweide() {"use strict";
         xy[1] = cy * Math.sin(lat);
     };
 
-    this.inverse = function(x, y, lonlat) {
+    this.inverse = function (x, y, lonlat) {
         var theta, sinTheta, cosTheta;
-        sinTheta = y / SQRT2;
+        // 1 / sqrt(2) = 0.70710678118655
+        sinTheta = y * 0.70710678118655;
         theta = Math.asin(sinTheta);
         cosTheta = Math.cos(theta);
-        lonlat[0] = x / (2 * SQRT2) * Math.PI / cosTheta;
+        // Math.PI / (2 * sqrt(2)) = 1.11072073453959
+        lonlat[0] = x * 1.11072073453959 / cosTheta;
         lonlat[1] = Math.asin(2 * (theta + sinTheta * cosTheta) / Math.PI);
     };
 
@@ -8271,5 +8277,5 @@ ShpError.ERROR_UNDEFINED = 0;
 // a 'no data' error is thrown when the byte array runs out of data.
 ShpError.ERROR_NODATA = 1;
 
-var adaptiveCompositeMapBuildTimeStamp = "May 16, 2014 03:17:28 PM";
+var adaptiveCompositeMapBuildTimeStamp = "May 19, 2014 01:55:03 PM";
 		
