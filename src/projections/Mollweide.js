@@ -2,9 +2,6 @@ function Mollweide() {"use strict";
 
     var MAX_ITER = 10;
     var TOLERANCE = 1.0e-7;
-    var ONE_TOL = 1.00000000000001;
-    var HALFPI = Math.PI / 2;
-    var SQRT2 = Math.sqrt(2);
     var cx, cy, cp;
 
     this.toString = function() {
@@ -43,12 +40,14 @@ function Mollweide() {"use strict";
         xy[1] = cy * Math.sin(lat);
     };
 
-    this.inverse = function(x, y, lonlat) {
+    this.inverse = function (x, y, lonlat) {
         var theta, sinTheta, cosTheta;
-        sinTheta = y / SQRT2;
+        // 1 / sqrt(2) = 0.70710678118655
+        sinTheta = y * 0.70710678118655;
         theta = Math.asin(sinTheta);
         cosTheta = Math.cos(theta);
-        lonlat[0] = x / (2 * SQRT2) * Math.PI / cosTheta;
+        // Math.PI / (2 * sqrt(2)) = 1.11072073453959
+        lonlat[0] = x * 1.11072073453959 / cosTheta;
         lonlat[1] = Math.asin(2 * (theta + sinTheta * cosTheta) / Math.PI);
     };
 
