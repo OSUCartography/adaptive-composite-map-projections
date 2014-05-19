@@ -1,4 +1,4 @@
-/* Build Time: May 19, 2014 01:55:03 PM */
+/* Build Time: May 19, 2014 02:18:20 PM */
 /*globals LambertCylindricalEqualArea, ProjectionFactory */
 function MapEvents(map) {"use strict";
 
@@ -1126,7 +1126,7 @@ WebGL.init = function(canvas) {"use strict";
     }
 
     if ( typeof WebGLDebugUtils !== 'undefined') {
-        console.log("Creating WebGL debug context");
+        // console.log("Creating WebGL debug context");
         // http://www.khronos.org/webgl/wiki/Debugging
         gl = WebGLDebugUtils.makeDebugContext(gl, function(err, funcName, args) {
             throw WebGLDebugUtils.glEnumToString(err) + " was caused by call to: " + funcName;
@@ -1164,9 +1164,9 @@ WebGL.addContextLostAndRestoredHandler = function(canvas, contextRestoredHandler
 
     // re-setup all WebGL state and re-create all WebGL resources when the context is restored.
     canvas.addEventListener("webglcontextrestored", function(event) {
-        console.log("restoring context");
+        //console.log("restoring context");
         contextRestoredHandler(WebGL.init(canvas));
-        console.log("context restored");
+        //console.log("context restored");
     }, false);
 };
 
@@ -1212,24 +1212,24 @@ WebGL.setDefaultUniforms = function(gl, program) {"use strict";
     
     gl.uniform1i(gl.getUniformLocation(program, 'flagStrips'), 0); 
 
-    gl.uniform1f(gl.getUniformLocation(program, 'geoCentralLat'), 0.); 
+    gl.uniform1f(gl.getUniformLocation(program, 'geoCentralLat'), 0); 
     gl.uniform2fv(gl.getUniformLocation(program, 'scale'), [Math.PI, Math.PI/2]);
-    
-    
 };
 
-WebGL.setUniforms = function(gl, program, useAdaptiveResolutionGrid, scale, mapScale, lon0, GeoBBox, uniforms, canvas) {"use strict";
+WebGL.setUniforms = function(gl, program, useAdaptiveResolutionGrid, scale, mapScale, lon0, geometryBBox, uniforms, canvas) {"use strict";
 
-    var viewTransform, i;
+    var viewTransform, xScale, yScale, i;
     // set default uniform values that are needed, e.g. rotation on sphere
     WebGL.setDefaultUniforms(gl, program);
     gl.enableVertexAttribArray(gl.getAttribLocation(program, 'vPosition'));
 
     gl.uniform1f(gl.getUniformLocation(program, 'meridian'), lon0);
 
-    if (useAdaptiveResolutionGrid && mapScale > 2.){
-        gl.uniform1f(gl.getUniformLocation(program, 'geoCentralLat'), (GeoBBox.north + GeoBBox.south)/2.);
-        gl.uniform2fv(gl.getUniformLocation(program, 'scale'), [Math.abs(GeoBBox.east - GeoBBox.west)/2., Math.abs(GeoBBox.north - GeoBBox.south)/2.]);
+    if (useAdaptiveResolutionGrid && mapScale > 2){
+        gl.uniform1f(gl.getUniformLocation(program, 'geoCentralLat'), (geometryBBox.north + geometryBBox.south) / 2);
+        xScale = Math.abs(geometryBBox.east - geometryBBox.west) / 2;
+        yScale = Math.abs(geometryBBox.north - geometryBBox.south) / 2;
+        gl.uniform2fv(gl.getUniformLocation(program, 'scale'), [xScale, yScale]);
     }
 
     // modelViewProjMatrix
@@ -1255,15 +1255,15 @@ WebGL.setUniforms = function(gl, program, useAdaptiveResolutionGrid, scale, mapS
 WebGL.loadGeometry = function(gl, resolution) {"use strict";
     var vertices, b, x, y, xIdx, yIdx, startY, stepY, idxCount, vbo, cellSize, geometryStrip = {};
 
-    cellSize = 2. / resolution;
+    cellSize = 2 / resolution;
     b = {        
-        startX : -1.,
-        startY : -1.,
-        stepX : cellSize/2.,
+        startX : -1,
+        startY : -1,
+        stepX : cellSize / 2,
         stepY : cellSize,
-        countX : Math.round(4. / cellSize),
-        countY : Math.round(2. / cellSize) + 1
-    }
+        countX : Math.round(4 / cellSize),
+        countY : Math.round(2 / cellSize) + 1
+    };
 
     vertices = new Float32Array(4 * b.countY * b.countX);
 
@@ -1271,10 +1271,10 @@ WebGL.loadGeometry = function(gl, resolution) {"use strict";
 
     //generation of one large triangle strip (S-Shaped), with degenerated triangles (NO IBO, just VBO!)
     //compare url for vbo+ibo, http://dan.lecocq.us/wordpress/2009/12/25/triangle-strip-for-grids-a-construction/
-    for(xIdx = 0; xIdx < b.countX; xIdx++){
+    for(xIdx = 0; xIdx < b.countX; xIdx += 1){
         x = b.startX + xIdx * b.stepX;
 
-        if(xIdx % 2 == 0) {
+        if(xIdx % 2 === 0) {
             //even cols
             startY = b.startY;
             stepY = b.stepY;
@@ -1284,10 +1284,10 @@ WebGL.loadGeometry = function(gl, resolution) {"use strict";
             stepY = -b.stepY;
         }
 
-        for(yIdx = 0; yIdx < b.countY; yIdx++){
+        for(yIdx = 0; yIdx < b.countY; yIdx += 1){
             y = startY + stepY * yIdx;
             vertices.set([x,y,x+b.stepX,y], 4 * idxCount);
-            idxCount++;
+            idxCount += 1;
         }
     }
 
@@ -1300,8 +1300,7 @@ WebGL.loadGeometry = function(gl, resolution) {"use strict";
     geometryStrip.cellSize = cellSize;
 
     return geometryStrip;
-
-}
+};
 
 WebGL.deleteGeometry = function(gl, geometryStrip) {"use strict";
     gl.deleteBuffer(geometryStrip.buffer);
@@ -1391,7 +1390,7 @@ WebGL.clear = function(gl) {"use strict";
     gl.clear(gl.COLOR_BUFFER_BIT);
 };
 
-WebGL.draw = function(gl, useAdaptiveResolutionGrid, drawWireframe, scale, lon0, uniforms, canvas, geometryStrip, shaderProgram, mapScale, GeoBBox) {"use strict";
+WebGL.draw = function(gl, useAdaptiveResolutionGrid, drawWireframe, scale, lon0, uniforms, canvas, geometryStrip, shaderProgram, mapScale, geometryBBox) {"use strict";
     var vPositionIdx, drawMode = gl.TRIANGLE_STRIP;
 
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -1399,7 +1398,7 @@ WebGL.draw = function(gl, useAdaptiveResolutionGrid, drawWireframe, scale, lon0,
     //FIXME hack 
     gl.useProgram(shaderProgram);
     
-    WebGL.setUniforms(gl, shaderProgram, useAdaptiveResolutionGrid, scale, mapScale, lon0, GeoBBox, uniforms, canvas);
+    WebGL.setUniforms(gl, shaderProgram, useAdaptiveResolutionGrid, scale, mapScale, lon0, geometryBBox, uniforms, canvas);
     
     gl.uniform1f(gl.getUniformLocation(shaderProgram, "cellsize"), geometryStrip.cellSize*Math.PI);
     
@@ -4753,7 +4752,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, mapLayers, projectionCha
 			extendRect(bb, lonlat[0], lonlat[1]);
 		}
 
-		// bottom right corner
+		// bottom right corner (missed by the two loops above)
 		lonlat = map.canvasXY2LonLat(canvasWidth, canvasHeight, projection);
 		extendRect(bb, lonlat[0], lonlat[1]);
 
@@ -8277,5 +8276,5 @@ ShpError.ERROR_UNDEFINED = 0;
 // a 'no data' error is thrown when the byte array runs out of data.
 ShpError.ERROR_NODATA = 1;
 
-var adaptiveCompositeMapBuildTimeStamp = "May 19, 2014 01:55:03 PM";
+var adaptiveCompositeMapBuildTimeStamp = "May 19, 2014 02:18:20 PM";
 		
