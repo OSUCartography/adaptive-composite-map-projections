@@ -26,7 +26,7 @@ varying vec2 textureCoord;
 varying float alongAntimeridian;
 
 // hack: size of cell in radians
-uniform float cellsize;
+uniform float antimeridianStripeCellSize;
 
 // ID of the current projection
 uniform float projectionID;
@@ -62,10 +62,10 @@ uniform float albersRho0;
 uniform float albersN;
 
 // geographic bounding box scale
-uniform vec2 scale;
+uniform vec2 geometryScale;
 
 // central latitude of geographic extent
-uniform float geoCentralLat;
+uniform float geometryCentralLat;
 
 // spherical rotation
 vec2 transformSphere(in vec2 lonLat) {
@@ -298,7 +298,7 @@ vec2 projectionMix(in vec2 lonLat) {
 void main(void) {
 	vec2 xy, lonLatTransformed;
 	//vec2 lonLat = radians(vPosition);
-    vec2 lonLat = vPosition * scale + vec2(0, geoCentralLat);
+    vec2 lonLat = vPosition * geometryScale + vec2(0, geometryCentralLat);
     
     // FIXME a tentative solution for the transformation from Lambert azimuthal to Mercator for square format maps
     // first rotate geometry, then project
@@ -319,7 +319,7 @@ void main(void) {
     	// shift by central meridian
     	lonLatTransformed.x = 2. * PI * (fract(0.5 * M_1_PI * (lonLatTransformed.x + meridian) + 0.5) - 0.5);
         
-    	alongAntimeridian = 1. - step(cellsize, abs(abs(lonLatTransformed.x) - PI));
+    	alongAntimeridian = 1. - step(antimeridianStripeCellSize, abs(abs(lonLatTransformed.x) - PI));
         
     	textureCoord = lonLatTransformed / vec2(2. * PI, -PI) + 0.5;
         

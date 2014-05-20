@@ -1,4 +1,4 @@
-/*globals RasterLayer, VideoLayer, resizeCanvasElement */
+/*globals RasterLayer, VideoLayer, resizeCanvasElement, clone, TransformedProjection */
 
 // FIXME
 var MERCATOR_LIMIT_1, MERCATOR_LIMIT_2;
@@ -131,7 +131,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 	var rotateSmallScales = true;
 	var zoomToMap = true;
 	var renderWireframe = false;
-	var adaptiveResolutionGrid = false;
+	var adaptiveResolutionGrid = true;
 
 	var snapEquator = true;
 
@@ -387,16 +387,17 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		return bb;
 	}
 
-	/* CHANGE START */
+	//False northing is applied to projections. Inverting false northing would be
+	//computationally expensive. Enlarged geometry bounding box ensures adaptive
+	//geometry covers whole visible window. For 110% bounding box, percent = 1.1
 	function enlargeGeometryBoundingBox(geometryBB, percent) {
-		var latCenter = (geometryBB.north + geometryBB.south) / 2.;
-		var range = (geometryBB.north - geometryBB.south) / 2.;
+		var latCenter = (geometryBB.north + geometryBB.south) / 2;
+		var range = (geometryBB.north - geometryBB.south) / 2;
 
-		//Enlarging Geometry BoundingBox for percent value
 		geometryBB.north = latCenter + percent * range;
 		geometryBB.south = latCenter - percent * range;
-		geometryBB.east *= percent;
-		geometryBB.west *= percent;
+		geometryBB.east *= (percent - 1)/2 + 1;
+		geometryBB.west *= (percent - 1)/2 + 1;
 
 		// clamp to valid range
 		if (geometryBB.west < -Math.PI) {
@@ -414,22 +415,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 
 		return geometryBB;
 	}
-
-	function clone(obj) {
-		if (null === obj || "object" !== typeof obj) {
-			return obj;
-		}
-		var attr, copy = obj.constructor();
-		for (attr in obj) {
-			if (obj.hasOwnProperty(attr)) {
-				copy[attr] = obj[attr];
-			}
-		}
-		return copy;
-	}
-
-	/* CHANGE ENDS */
-
+	
 	this.render = function(fastRender) {
 		if (!Array.isArray(layers)) {
 			return;
@@ -438,36 +424,41 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		var projection = this.updateProjection();
 		var bb = visibleGeographicBoundingBoxCenteredOnLon0(projection);
 
-		/* CHANGE START */
-		console.log(projection);
-		var poleLat = Math.PI / 2, rotLat = 0;
+		//Geometry projection is different then projection of the map. To create adaptive grid,
+		//right (geometry) bounding box needs to be defined and passed to the shaders. 
+		//Geometry projections differs only in central latitude.
+		var poleLatitude = Math.PI / 2, geometryLat0 = 0;
+		//cloning projection configurations
 		var geometryConf = clone(this.conf);
 
-		if ( typeof projection.getPoleLat != 'undefined') {
-			poleLat = Math.PI - projection.getPoleLat();
+		//Detecting different polar latitude
+		if ( typeof projection.getPoleLat !== 'undefined') {
+			poleLatitude = Math.PI - projection.getPoleLat();
 		}
-		rotLat = geometryConf.lat0 + Math.PI / 2 - poleLat;
+		geometryLat0 = geometryConf.lat0 + Math.PI / 2 - poleLatitude; //Computing geometry central latitude
 		
-		//FIXME: rotLat is corrected for negative latitudes; 
-		//Fixing rotation latitude for intermediate latitudes
-		if (rotLat > Math.PI / 2) {
-			rotLat = Math.PI - rotLat;
+		//geometryLat0 is not in right quadrant for negative central latitudes
+		//Fixing geometryLat0 for intermediate latitudes (negative central latitude)
+		if (geometryLat0 > Math.PI / 2) {
+			geometryLat0 = Math.PI - geometryLat0;
 		}
-		//Fixing rotation latitude for polar areas
-		if (rotLat < -Math.PI / 2) {
-			rotLat = 2. * Math.PI - rotLat;
+		//Fixing geometryLat0 for polar areas (negative central latitude)
+		if (geometryLat0 < -Math.PI / 2) {
+			geometryLat0 = 2 * Math.PI - geometryLat0;
 		}
 		
-		geometryConf.lat0 = rotLat;
+		//Assigning geometry central latitude to configurations
+		geometryConf.lat0 = geometryLat0;
+		
+		//Computing geometry bounding box
 		var geometryProjection = ProjectionFactory.create(geometryConf);
 		var geometryBB = visibleGeographicBoundingBoxCenteredOnLon0(geometryProjection);
 
-		//FIXME: Enlarging geometry bounding box to fix corners
-		if (mapScale >= 2. && mapScale <= 6.) {
+		//Due to different false northing values, it is more efficient to simply enlarged 
+		//geometry bounding box for 10%, in each direction 5%.
+		if (mapScale >= this.conf.scaleLimit2 && mapScale <= this.conf.scaleLimit5) {
 			geometryBB = enlargeGeometryBoundingBox(geometryBB, 1.1);
 		}
-		
-		/* CHANGE ENDS */
 
 		var ctx = backgroundCanvas.getContext('2d');
 		ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -489,15 +480,13 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 
 			layer = layers[layerID];
 			layer.visibleGeographicBoundingBoxCenteredOnLon0 = bb;
-			/* CHANGE START */
 			layer.visibleGeometryBoundingBoxCenteredOnLon0 = geometryBB;
-			/* CHANGE ENDS */
 
 			layer.projection = projection;
 
 			layer.rotation = null;
-			if ( typeof projection.getPoleLatitude === 'function') {
-				var poleLat = projection.getPoleLatitude();
+			if (projection instanceof TransformedProjection) {
+				var poleLat = projection.getPoleLat();
 				if (poleLat !== Math.PI / 2) {
 					layer.rotation = new SphericalRotation(poleLat);
 				}

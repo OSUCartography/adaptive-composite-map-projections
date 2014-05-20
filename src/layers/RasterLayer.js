@@ -30,10 +30,15 @@ function RasterLayer(url) {"use strict";
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.uniform1i(gl.getUniformLocation(shaderProgram, "texture"), 0);
         var uniforms = this.projection.getShaderUniforms();
+        var adaptiveGridConf = {
+			useAdaptiveResolutionGrid : map.isAdaptiveResolutionGrid(),
+			geometryBBox : this.visibleGeometryBoundingBoxCenteredOnLon0,
+			mapScale : map.getMapScale(),
+			startScaleLimit : map.conf.scaleLimit2
+        };
+        
         stats.begin();
-        /* CHANGE START */
-        WebGL.draw(gl, map.isAdaptiveResolutionGrid(), map.isRenderingWireframe(), this.mapScale / this.refScaleFactor * this.glScale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram, map.getMapScale(), this.visibleGeometryBoundingBoxCenteredOnLon0);
-        /* CHANGE ENDS */
+        WebGL.draw(gl, map.isRenderingWireframe(), this.mapScale / this.refScaleFactor * this.glScale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram, adaptiveGridConf);
         stats.end();
     };
 

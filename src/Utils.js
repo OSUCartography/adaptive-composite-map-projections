@@ -212,3 +212,19 @@ function formatLongitude(lon) {
     }
     return Math.abs(lon / Math.PI * 180).toFixed(1) + "\u00B0" + (lon < 0 ? "W" : "E");
 }
+
+//http://stackoverflow.com/questions/728360/most-elegant-way-to-clone-a-javascript-object
+//This function creates a clone of a javascript object
+function clone(obj) {
+	if (null === obj || "object" !== typeof obj) {
+		return obj;
+	}
+	//Copying the object
+	var attr, copy = obj.constructor();
+	for (attr in obj) {
+		if (obj.hasOwnProperty(attr)) {
+			copy[attr] = obj[attr];
+		}
+	}
+	return copy;
+}

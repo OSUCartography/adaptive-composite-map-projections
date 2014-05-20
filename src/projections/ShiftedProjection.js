@@ -44,7 +44,6 @@ function ShiftedProjection(proj, dy) {"use strict";
 		return dy;
 	};
 
-	/* CHANGE START */
 	this.getPoleLat = function() {
 		var poleLat = Math.PI / 2;
 		if ( typeof proj.getPoleLat != 'undefined') {
@@ -52,6 +51,4 @@ function ShiftedProjection(proj, dy) {"use strict";
 		}
 		return poleLat;
 	};
-	/* CHANGE ENDS */
-
 }

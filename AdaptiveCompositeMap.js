@@ -1,4 +1,4 @@
-/* Build Time: May 19, 2014 09:06:10 PM */
+/* Build Time: May 20, 2014 04:16:21 PM */
 /*globals LambertCylindricalEqualArea, ProjectionFactory */
 function MapEvents(map) {"use strict";
 
@@ -1036,6 +1036,22 @@ function formatLongitude(lon) {
     }
     return Math.abs(lon / Math.PI * 180).toFixed(1) + "\u00B0" + (lon < 0 ? "W" : "E");
 }
+
+//http://stackoverflow.com/questions/728360/most-elegant-way-to-clone-a-javascript-object
+//This function creates a clone of a javascript object
+function clone(obj) {
+	if (null === obj || "object" !== typeof obj) {
+		return obj;
+	}
+	//Copying the object
+	var attr, copy = obj.constructor();
+	for (attr in obj) {
+		if (obj.hasOwnProperty(attr)) {
+			copy[attr] = obj[attr];
+		}
+	}
+	return copy;
+}
 /*globals WebGLDebugUtils, J3DIMatrix4, Float32Array, isPowerOfTwo, nextHighestPowerOfTwo */
 
 function WebGL() {"use strict";
@@ -1209,24 +1225,25 @@ WebGL.setDefaultUniforms = function(gl, program) {"use strict";
     
     gl.uniform1i(gl.getUniformLocation(program, 'flagStrips'), 0); 
 
-    gl.uniform1f(gl.getUniformLocation(program, 'geoCentralLat'), 0); 
-    gl.uniform2fv(gl.getUniformLocation(program, 'scale'), [Math.PI, Math.PI/2]);
+    gl.uniform1f(gl.getUniformLocation(program, 'geometryCentralLat'), 0); 
+    gl.uniform2fv(gl.getUniformLocation(program, 'geometryScale'), [Math.PI, Math.PI/2]);
 };
 
-WebGL.setUniforms = function(gl, program, useAdaptiveResolutionGrid, scale, mapScale, lon0, geometryBBox, uniforms, canvas) {"use strict";
+WebGL.setUniforms = function(gl, program, scale, lon0, uniforms, canvas, adaptiveGridConf) {"use strict";
 
-    var viewTransform, xScale, yScale, i;
+    var viewTransform, xScale, yScale, i, geometryBBox;
     // set default uniform values that are needed, e.g. rotation on sphere
     WebGL.setDefaultUniforms(gl, program);
     gl.enableVertexAttribArray(gl.getAttribLocation(program, 'vPosition'));
 
     gl.uniform1f(gl.getUniformLocation(program, 'meridian'), lon0);
 
-    if (useAdaptiveResolutionGrid && mapScale > 2){
-        gl.uniform1f(gl.getUniformLocation(program, 'geoCentralLat'), (geometryBBox.north + geometryBBox.south) / 2);
+    if (adaptiveGridConf.useAdaptiveResolutionGrid && adaptiveGridConf.mapScale > adaptiveGridConf.startScaleLimit){
+		geometryBBox = adaptiveGridConf.geometryBBox;
+        gl.uniform1f(gl.getUniformLocation(program, 'geometryCentralLat'), (geometryBBox.north + geometryBBox.south) / 2);
         xScale = Math.abs(geometryBBox.east - geometryBBox.west) / 2;
         yScale = Math.abs(geometryBBox.north - geometryBBox.south) / 2;
-        gl.uniform2fv(gl.getUniformLocation(program, 'scale'), [xScale, yScale]);
+        gl.uniform2fv(gl.getUniformLocation(program, 'geometryScale'), [xScale, yScale]);
     }
 
     // modelViewProjMatrix
@@ -1387,7 +1404,7 @@ WebGL.clear = function(gl) {"use strict";
     gl.clear(gl.COLOR_BUFFER_BIT);
 };
 
-WebGL.draw = function(gl, useAdaptiveResolutionGrid, drawWireframe, scale, lon0, uniforms, canvas, geometryStrip, shaderProgram, mapScale, geometryBBox) {"use strict";
+WebGL.draw = function(gl, drawWireframe, scale, lon0, uniforms, canvas, geometryStrip, shaderProgram, adaptiveGridConf) {"use strict";
     var vPositionIdx, drawMode = gl.TRIANGLE_STRIP;
 
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -1395,9 +1412,9 @@ WebGL.draw = function(gl, useAdaptiveResolutionGrid, drawWireframe, scale, lon0,
     //FIXME hack 
     gl.useProgram(shaderProgram);
     
-    WebGL.setUniforms(gl, shaderProgram, useAdaptiveResolutionGrid, scale, mapScale, lon0, geometryBBox, uniforms, canvas);
+    WebGL.setUniforms(gl, shaderProgram, scale, lon0, uniforms, canvas, adaptiveGridConf);
     
-    gl.uniform1f(gl.getUniformLocation(shaderProgram, "cellsize"), geometryStrip.cellSize*Math.PI);
+    gl.uniform1f(gl.getUniformLocation(shaderProgram, "antimeridianStripeCellSize"), geometryStrip.cellSize*Math.PI);
     
     vPositionIdx = gl.getAttribLocation(shaderProgram, 'vPosition');
     gl.bindBuffer(gl.ARRAY_BUFFER, geometryStrip.buffer);
@@ -4001,10 +4018,15 @@ function RasterLayer(url) {"use strict";
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.uniform1i(gl.getUniformLocation(shaderProgram, "texture"), 0);
         var uniforms = this.projection.getShaderUniforms();
+        var adaptiveGridConf = {
+			useAdaptiveResolutionGrid : map.isAdaptiveResolutionGrid(),
+			geometryBBox : this.visibleGeometryBoundingBoxCenteredOnLon0,
+			mapScale : map.getMapScale(),
+			startScaleLimit : map.conf.scaleLimit2
+        };
+        
         stats.begin();
-        /* CHANGE START */
-        WebGL.draw(gl, map.isAdaptiveResolutionGrid(), map.isRenderingWireframe(), this.mapScale / this.refScaleFactor * this.glScale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram, map.getMapScale(), this.visibleGeometryBoundingBoxCenteredOnLon0);
-        /* CHANGE ENDS */
+        WebGL.draw(gl, map.isRenderingWireframe(), this.mapScale / this.refScaleFactor * this.glScale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram, adaptiveGridConf);
         stats.end();
     };
 
@@ -4382,7 +4404,7 @@ document.write(
 	+ "End Function\r\n"
 	+ "</script>\r\n"
 );
-/*globals RasterLayer, VideoLayer, resizeCanvasElement */
+/*globals RasterLayer, VideoLayer, resizeCanvasElement, clone, TransformedProjection */
 
 // FIXME
 var MERCATOR_LIMIT_1, MERCATOR_LIMIT_2;
@@ -4515,7 +4537,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 	var rotateSmallScales = true;
 	var zoomToMap = true;
 	var renderWireframe = false;
-	var adaptiveResolutionGrid = false;
+	var adaptiveResolutionGrid = true;
 
 	var snapEquator = true;
 
@@ -4771,16 +4793,17 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		return bb;
 	}
 
-	/* CHANGE START */
+	//False northing is applied to projections. Inverting false northing would be
+	//computationally expensive. Enlarged geometry bounding box ensures adaptive
+	//geometry covers whole visible window. For 110% bounding box, percent = 1.1
 	function enlargeGeometryBoundingBox(geometryBB, percent) {
-		var latCenter = (geometryBB.north + geometryBB.south) / 2.;
-		var range = (geometryBB.north - geometryBB.south) / 2.;
+		var latCenter = (geometryBB.north + geometryBB.south) / 2;
+		var range = (geometryBB.north - geometryBB.south) / 2;
 
-		//Enlarging Geometry BoundingBox for percent value
 		geometryBB.north = latCenter + percent * range;
 		geometryBB.south = latCenter - percent * range;
-		geometryBB.east *= percent;
-		geometryBB.west *= percent;
+		geometryBB.east *= (percent - 1)/2 + 1;
+		geometryBB.west *= (percent - 1)/2 + 1;
 
 		// clamp to valid range
 		if (geometryBB.west < -Math.PI) {
@@ -4798,22 +4821,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 
 		return geometryBB;
 	}
-
-	function clone(obj) {
-		if (null === obj || "object" !== typeof obj) {
-			return obj;
-		}
-		var attr, copy = obj.constructor();
-		for (attr in obj) {
-			if (obj.hasOwnProperty(attr)) {
-				copy[attr] = obj[attr];
-			}
-		}
-		return copy;
-	}
-
-	/* CHANGE ENDS */
-
+	
 	this.render = function(fastRender) {
 		if (!Array.isArray(layers)) {
 			return;
@@ -4822,36 +4830,41 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		var projection = this.updateProjection();
 		var bb = visibleGeographicBoundingBoxCenteredOnLon0(projection);
 
-		/* CHANGE START */
-		console.log(projection);
-		var poleLat = Math.PI / 2, rotLat = 0;
+		//Geometry projection is different then projection of the map. To create adaptive grid,
+		//right (geometry) bounding box needs to be defined and passed to the shaders. 
+		//Geometry projections differs only in central latitude.
+		var poleLatitude = Math.PI / 2, geometryLat0 = 0;
+		//cloning projection configurations
 		var geometryConf = clone(this.conf);
 
-		if ( typeof projection.getPoleLat != 'undefined') {
-			poleLat = Math.PI - projection.getPoleLat();
+		//Detecting different polar latitude
+		if ( typeof projection.getPoleLat !== 'undefined') {
+			poleLatitude = Math.PI - projection.getPoleLat();
 		}
-		rotLat = geometryConf.lat0 + Math.PI / 2 - poleLat;
+		geometryLat0 = geometryConf.lat0 + Math.PI / 2 - poleLatitude; //Computing geometry central latitude
 		
-		//FIXME: rotLat is corrected for negative latitudes; 
-		//Fixing rotation latitude for intermediate latitudes
-		if (rotLat > Math.PI / 2) {
-			rotLat = Math.PI - rotLat;
+		//geometryLat0 is not in right quadrant for negative central latitudes
+		//Fixing geometryLat0 for intermediate latitudes (negative central latitude)
+		if (geometryLat0 > Math.PI / 2) {
+			geometryLat0 = Math.PI - geometryLat0;
 		}
-		//Fixing rotation latitude for polar areas
-		if (rotLat < -Math.PI / 2) {
-			rotLat = 2. * Math.PI - rotLat;
+		//Fixing geometryLat0 for polar areas (negative central latitude)
+		if (geometryLat0 < -Math.PI / 2) {
+			geometryLat0 = 2 * Math.PI - geometryLat0;
 		}
 		
-		geometryConf.lat0 = rotLat;
+		//Assigning geometry central latitude to configurations
+		geometryConf.lat0 = geometryLat0;
+		
+		//Computing geometry bounding box
 		var geometryProjection = ProjectionFactory.create(geometryConf);
 		var geometryBB = visibleGeographicBoundingBoxCenteredOnLon0(geometryProjection);
 
-		//FIXME: Enlarging geometry bounding box to fix corners
-		if (mapScale >= 2. && mapScale <= 6.) {
+		//Due to different false northing values, it is more efficient to simply enlarged 
+		//geometry bounding box for 10%, in each direction 5%.
+		if (mapScale >= this.conf.scaleLimit2 && mapScale <= this.conf.scaleLimit5) {
 			geometryBB = enlargeGeometryBoundingBox(geometryBB, 1.1);
 		}
-		
-		/* CHANGE ENDS */
 
 		var ctx = backgroundCanvas.getContext('2d');
 		ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -4873,15 +4886,13 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 
 			layer = layers[layerID];
 			layer.visibleGeographicBoundingBoxCenteredOnLon0 = bb;
-			/* CHANGE START */
 			layer.visibleGeometryBoundingBoxCenteredOnLon0 = geometryBB;
-			/* CHANGE ENDS */
 
 			layer.projection = projection;
 
 			layer.rotation = null;
-			if ( typeof projection.getPoleLatitude === 'function') {
-				var poleLat = projection.getPoleLatitude();
+			if (projection instanceof TransformedProjection) {
+				var poleLat = projection.getPoleLat();
 				if (poleLat !== Math.PI / 2) {
 					layer.rotation = new SphericalRotation(poleLat);
 				}
@@ -5909,11 +5920,9 @@ function LambertAzimuthalEqualAreaOblique() {"use strict";
         return -2;
     };
     
-    /* CHANGE START */
     this.getPoleLat = function() {
 		return Math.PI - lat0;
 	};
-	/* CHANGE ENDS */
 }
 /*globals GraticuleOutline */
 //Lambert Azimuthal Equal-Area Projection polar aspect
@@ -7383,7 +7392,6 @@ function ShiftedProjection(proj, dy) {"use strict";
 		return dy;
 	};
 
-	/* CHANGE START */
 	this.getPoleLat = function() {
 		var poleLat = Math.PI / 2;
 		if ( typeof proj.getPoleLat != 'undefined') {
@@ -7391,8 +7399,6 @@ function ShiftedProjection(proj, dy) {"use strict";
 		}
 		return poleLat;
 	};
-	/* CHANGE ENDS */
-
 }
 function Sinusoidal() {"use strict";
 
@@ -7914,19 +7920,13 @@ function TransformedProjection(proj, dy, poleLat, onlyInverseRotation) {"use str
         return dy;
     };
 
-    this.getPoleLatitude = function() {
-        return poleLat;
-    };
-
     this.getID = function() {
         return proj.getID();
     };
-   
-    /* CHANGE START */
+
     this.getPoleLat = function() {
         return poleLat;
     };
-    /* CHANGE END */
 }
 function WeightedProjectionMix(projection1, projection2, weight1) {
 
@@ -8360,5 +8360,5 @@ ShpError.ERROR_UNDEFINED = 0;
 // a 'no data' error is thrown when the byte array runs out of data.
 ShpError.ERROR_NODATA = 1;
 
-var adaptiveCompositeMapBuildTimeStamp = "May 19, 2014 09:06:10 PM";
+var adaptiveCompositeMapBuildTimeStamp = "May 20, 2014 04:16:21 PM";
 		

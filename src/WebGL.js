@@ -171,24 +171,25 @@ WebGL.setDefaultUniforms = function(gl, program) {"use strict";
     
     gl.uniform1i(gl.getUniformLocation(program, 'flagStrips'), 0); 
 
-    gl.uniform1f(gl.getUniformLocation(program, 'geoCentralLat'), 0); 
-    gl.uniform2fv(gl.getUniformLocation(program, 'scale'), [Math.PI, Math.PI/2]);
+    gl.uniform1f(gl.getUniformLocation(program, 'geometryCentralLat'), 0); 
+    gl.uniform2fv(gl.getUniformLocation(program, 'geometryScale'), [Math.PI, Math.PI/2]);
 };
 
-WebGL.setUniforms = function(gl, program, useAdaptiveResolutionGrid, scale, mapScale, lon0, geometryBBox, uniforms, canvas) {"use strict";
+WebGL.setUniforms = function(gl, program, scale, lon0, uniforms, canvas, adaptiveGridConf) {"use strict";
 
-    var viewTransform, xScale, yScale, i;
+    var viewTransform, xScale, yScale, i, geometryBBox;
     // set default uniform values that are needed, e.g. rotation on sphere
     WebGL.setDefaultUniforms(gl, program);
     gl.enableVertexAttribArray(gl.getAttribLocation(program, 'vPosition'));
 
     gl.uniform1f(gl.getUniformLocation(program, 'meridian'), lon0);
 
-    if (useAdaptiveResolutionGrid && mapScale > 2){
-        gl.uniform1f(gl.getUniformLocation(program, 'geoCentralLat'), (geometryBBox.north + geometryBBox.south) / 2);
+    if (adaptiveGridConf.useAdaptiveResolutionGrid && adaptiveGridConf.mapScale > adaptiveGridConf.startScaleLimit){
+		geometryBBox = adaptiveGridConf.geometryBBox;
+        gl.uniform1f(gl.getUniformLocation(program, 'geometryCentralLat'), (geometryBBox.north + geometryBBox.south) / 2);
         xScale = Math.abs(geometryBBox.east - geometryBBox.west) / 2;
         yScale = Math.abs(geometryBBox.north - geometryBBox.south) / 2;
-        gl.uniform2fv(gl.getUniformLocation(program, 'scale'), [xScale, yScale]);
+        gl.uniform2fv(gl.getUniformLocation(program, 'geometryScale'), [xScale, yScale]);
     }
 
     // modelViewProjMatrix
@@ -349,7 +350,7 @@ WebGL.clear = function(gl) {"use strict";
     gl.clear(gl.COLOR_BUFFER_BIT);
 };
 
-WebGL.draw = function(gl, useAdaptiveResolutionGrid, drawWireframe, scale, lon0, uniforms, canvas, geometryStrip, shaderProgram, mapScale, geometryBBox) {"use strict";
+WebGL.draw = function(gl, drawWireframe, scale, lon0, uniforms, canvas, geometryStrip, shaderProgram, adaptiveGridConf) {"use strict";
     var vPositionIdx, drawMode = gl.TRIANGLE_STRIP;
 
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -357,9 +358,9 @@ WebGL.draw = function(gl, useAdaptiveResolutionGrid, drawWireframe, scale, lon0,
     //FIXME hack 
     gl.useProgram(shaderProgram);
     
-    WebGL.setUniforms(gl, shaderProgram, useAdaptiveResolutionGrid, scale, mapScale, lon0, geometryBBox, uniforms, canvas);
+    WebGL.setUniforms(gl, shaderProgram, scale, lon0, uniforms, canvas, adaptiveGridConf);
     
-    gl.uniform1f(gl.getUniformLocation(shaderProgram, "cellsize"), geometryStrip.cellSize*Math.PI);
+    gl.uniform1f(gl.getUniformLocation(shaderProgram, "antimeridianStripeCellSize"), geometryStrip.cellSize*Math.PI);
     
     vPositionIdx = gl.getAttribLocation(shaderProgram, 'vPosition');
     gl.bindBuffer(gl.ARRAY_BUFFER, geometryStrip.buffer);

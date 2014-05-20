@@ -76,17 +76,11 @@ function TransformedProjection(proj, dy, poleLat, onlyInverseRotation) {"use str
         return dy;
     };
 
-    this.getPoleLatitude = function() {
-        return poleLat;
-    };
-
     this.getID = function() {
         return proj.getID();
     };
-   
-    /* CHANGE START */
+
     this.getPoleLat = function() {
         return poleLat;
     };
-    /* CHANGE END */
 }
