@@ -127,12 +127,10 @@ ProjectionFactory.create = function(conf) {
     }
 
     function getMediumToLargeScaleProjectionForPortraitFormat(conf) {
-        var w = (conf.mapScale - conf.scaleLimit4) / (conf.scaleLimit5 - conf.scaleLimit4);
-        var p1 = new LambertTransverseCylindricalEqualArea();
-        p1.initialize(conf);
-        var p2 = new LambertAzimuthalEqualAreaOblique();
-        p2.initialize(conf);
-        return new WeightedProjectionMix(p1, p2, w);
+		var projection = new TransformedLambertAzimuthalTransverse(),
+		w = (conf.scaleLimit5 - conf.mapScale) / (conf.scaleLimit5 - conf.scaleLimit4);
+		projection.initialize(conf, w);
+		return new TransformedProjection(projection, 0, Math.PI - conf.lat0, true);
     }
 
     function useCylindrical(conf) {

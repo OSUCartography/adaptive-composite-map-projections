@@ -11,12 +11,14 @@
 #define ALBERS_ID 11.
 #define LAMBERT_AZIMUTHAL_NORTH_POLAR_ID -2.
 #define LAMBERT_AZIMUTHAL_SOUTH_POLAR_ID -3.
-#define TRANSFORMED_WAGNER_ID 654267985.
+#define TRANSFORMED_LAMBERT_AZIMUTHAL_ID 654267985.
+#define TRANSFORMED_LAMBERT_AZIMUTHAL_TRANSVERSE_ID = -777.
 #define NATURAL_EARTH_ID 7259365.
 #define CANTERS1_ID 53287562.
 #define CANTERS2_ID 38426587.
 #define CYLINDRICAL_EQUAL_AREA_ID -1.
 #define MIXPROJECTION -9999.0
+
 
 uniform mat4 modelViewProjMatrix;
 attribute vec2 vPosition;
@@ -227,9 +229,31 @@ vec2 lambertCylindricalTransverse(in vec2 lonLat) {
 	return vec2(x, y);
 }
 
+vec2 transformedLambertAzimuthalTransverse(in vec2 lonLat) {
+	lonLat.x += PI / 2.;
+	vec2 cosLonLat = cos(lonLat);
+	vec2 sinLonLat = sin(lonLat);
+
+	// Synder 1987 Map Projections - A working manual, eq. 5-10b with alpha = 0
+    lonLat.x = atan(cosLonLat.y * sinLonLat.x, sinLonLat.y);
+    // Synder 1987 Map Projections - A working manual, eq. 5-9 with alpha = 0
+    float sinLat = -cosLonLat.y * cosLonLat.x;
+
+	float lon = lonLat.x * wagnerN;
+	float sinLon = sin(lon);
+	float cosLon = cos(lon);
+	
+	float sinO = wagnerM * sinLat;
+	float cosO = sqrt(1. - sinO * sinO);
+	float d = sqrt(2. / (1. + cosO * cosLon));
+	float y = -wagnerCA * d * cosO * sinLon;
+	float x = wagnerCB * d * sinO;
+	return vec2(x, y);
+}
+
 vec2 project(in vec2 lonLat, in float projectionID) {
 	// world map projections
-	if (projectionID == TRANSFORMED_WAGNER_ID) {
+	if (projectionID == TRANSFORMED_LAMBERT_AZIMUTHAL_ID) {
 		return transformedWagner(lonLat);
     } else if (projectionID == EPSG_ROBINSON) {
         return robinson(lonLat);
@@ -255,8 +279,10 @@ vec2 project(in vec2 lonLat, in float projectionID) {
         return lambertAzimuthalSouthPolar(lonLat);
     } else if (projectionID == EPSG_MERCATOR) {
         return mercator(lonLat);
-	} else {//if (projectionID == EPSG_LAMBERT_CYLINDRICAL_TRANSVERSE) {
+	} else if (projectionID == EPSG_LAMBERT_CYLINDRICAL_TRANSVERSE) {
 		return lambertCylindricalTransverse(lonLat);
+	} else /* TRANSFORMED_LAMBERT_AZIMUTHAL_TRANSVERSE_ID */{
+		return transformedLambertAzimuthalTransverse(lonLat);
 	}
 }
 
