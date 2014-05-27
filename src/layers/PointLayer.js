@@ -71,7 +71,7 @@ function PointLayer(url, style, scaleVisibility) {"use strict";
             return;
         }
 
-        d = AbstractLayer.getScaleInterpolatedValue(this.style.AM_symbolDim, "dim", this.relativeMapScale) / this.mapScale;
+        d = AbstractLayer.getScaleInterpolatedValue(this.style.AM_symbolDim, "dim", this.zoomFactor) / this.mapScale;
         outterFill = this.style.hasOwnProperty("fillStyle") ? this.style.fillStyle : null;
         outterStroke = this.style.hasOwnProperty("strokeStyle") ? this.style.strokeStyle : null;
         outterLineWidth = this.style.lineWidth / this.mapScale;
@@ -83,7 +83,7 @@ function PointLayer(url, style, scaleVisibility) {"use strict";
                 fill : this.style.hasOwnProperty("AM_fillStyle2") ? this.style.AM_fillStyle2 : null,
                 stroke : this.style.hasOwnProperty("AM_strokeStyle2") ? this.style.AM_strokeStyle2 : null,
                 lineWidth : this.style.hasOwnProperty("AM_lineWidth2") ? this.style.AM_lineWidth2 / this.mapScale : null,
-                d : AbstractLayer.getScaleInterpolatedValue(style.AM_symbolDim2, "dim", this.relativeMapScale) / this.mapScale
+                d : AbstractLayer.getScaleInterpolatedValue(style.AM_symbolDim2, "dim", this.zoomFactor) / this.mapScale
             };
         } else {
             innerSymbol = null;
@@ -134,7 +134,7 @@ function PointLayer(url, style, scaleVisibility) {"use strict";
 
         if (style.hasOwnProperty("AM_fontSize") && Array.isArray(style.AM_fontSize) && style.AM_fontSize.length > 0) {
             // interpolate scale-dependent font size
-            fontSize = AbstractLayer.getScaleInterpolatedValue(style.AM_fontSize, "fontSize", this.relativeMapScale);
+            fontSize = AbstractLayer.getScaleInterpolatedValue(style.AM_fontSize, "fontSize", this.zoomFactor);
             ctx.font = this.style.font.replace("#", fontSize.toFixed(1));
         } else {
             // extract font size from css font string
@@ -156,7 +156,7 @@ function PointLayer(url, style, scaleVisibility) {"use strict";
         if (pt.labelTrack) {
             var track = pt.labelTrack;
             var trackPt = track[track.length - 1];
-            if (layer.relativeMapScale > trackPt.scale) {
+            if (layer.zoomFactor > trackPt.scale) {
                 lon = trackPt.lon;
                 lat = trackPt.lat;
             } else {
@@ -164,9 +164,9 @@ function PointLayer(url, style, scaleVisibility) {"use strict";
                 for ( trackPtID = track.length - 2; trackPtID >= 0; trackPtID -= 1) {
                     var trackPt1 = track[trackPtID];
                     var scaleLim = trackPt1.scale;
-                    if (layer.relativeMapScale > scaleLim) {
+                    if (layer.zoomFactor > scaleLim) {
                         var trackPt2 = track[trackPtID + 1];
-                        var w = (layer.relativeMapScale - scaleLim) / (trackPt2.scale - trackPt1.scale);
+                        var w = (layer.zoomFactor - scaleLim) / (trackPt2.scale - trackPt1.scale);
                         lon = (1 - w) * trackPt1.lon + w * trackPt2.lon;
                         lat = (1 - w) * trackPt1.lat + w * trackPt2.lat;
                         break;
@@ -315,7 +315,7 @@ function PointLayer(url, style, scaleVisibility) {"use strict";
              // only draw the feature if the scale is large enough
              if (scaleVisibility && scaleVisibility.featureMinScaleAtt) {
              var featureMinScale = dataRecord.values[scaleVisibility.featureMinScaleAtt];
-             if (featureMinScale > layer.relativeMapScale) {
+             if (featureMinScale > layer.zoomFactor) {
              continue;
              }
              }

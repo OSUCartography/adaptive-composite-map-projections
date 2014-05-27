@@ -33,8 +33,8 @@ function RasterLayer(url) {"use strict";
         var adaptiveGridConf = {
 			useAdaptiveResolutionGrid : map.isAdaptiveResolutionGrid(),
 			geometryBBox : this.visibleGeometryBoundingBoxCenteredOnLon0,
-			mapScale : map.getMapScale(),
-			startScaleLimit : map.conf.scaleLimit2
+			mapScale : map.getZoomFactor(),
+			startScaleLimit : map.conf.zoomLimit2
         };
         
         stats.begin();

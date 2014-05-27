@@ -713,7 +713,7 @@ function PolylineLayer(url, style, scaleVisibility) {"use strict";
              var featureMinScale = layer.dbfFile.records[i].values[scaleVisibility.featureMinScaleAtt];
              // FIXME
              featureMinScale *= 2;
-             if (featureMinScale > layer.relativeMapScale) {
+             if (featureMinScale > layer.zoomFactor) {
              continue;
              }
              }

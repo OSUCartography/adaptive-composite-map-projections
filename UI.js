@@ -19,7 +19,7 @@ $(window).load(function() {"use strict";
         resizeCanvasElement(document.getElementById('slippyMap'), w, h);
 
         // allow pre-loading at smaller scales
-        if (map.getMapScale() < MERCATOR_LIMIT_WEB_MAP_SCALE - 2) {
+        if (map.getZoomFactor() < MERCATOR_LIMIT_WEB_MAP_SCALE - 2) {
             return;
         }
 
@@ -30,7 +30,7 @@ $(window).load(function() {"use strict";
             lon : centerLon
         });
 
-        webMapScale = MERCATOR_LIMIT_WEB_MAP_SCALE + Math.floor(map.getMapScale() - MERCATOR_LIMIT_2);
+        webMapScale = MERCATOR_LIMIT_WEB_MAP_SCALE + Math.floor(map.getZoomFactor() - MERCATOR_LIMIT_2);
         webMapScale = Math.max(webMapScale, MERCATOR_LIMIT_WEB_MAP_SCALE);
         // FIXME
         //var webMapScale = toWebMapScale(canvasHeight, mapScale);
@@ -53,7 +53,7 @@ $(window).load(function() {"use strict";
         infoText += "</B><br>";
         infoText += projection.isEqualArea() ? "Equal area" : "Not equal area";
         infoText += "<br><br>";
-        infoText += "<B>Zoom Factor</B><br> " + map.getMapScale().toFixed(2);
+        infoText += "<B>Zoom Factor</B><br> " + map.getZoomFactor().toFixed(2);
         infoText += "<br>";
 
         ratio = map.conf.canvasHeight / map.conf.canvasWidth;
@@ -84,7 +84,7 @@ $(window).load(function() {"use strict";
         var lon0, lat0, slippyMapParent, vectorMapParent;
         slippyMapParent = document.getElementById("slippyMap");
         vectorMapParent = document.getElementById("adaptiveMap");
-        if (map.getMapScale() > MERCATOR_LIMIT_2) {
+        if (map.getZoomFactor() > MERCATOR_LIMIT_2) {
             vectorMapParent.style.visibility = 'hidden';
             slippyMapParent.style.visibility = 'visible';
             updateSlippyMap();
@@ -101,7 +101,7 @@ $(window).load(function() {"use strict";
 
     function renderMap_Diagram_InfoText(renderDiagramBackground) {
         map.render();
-        diagram.renderButton(map.getMapScale(), map.getCentralLatitude());
+        diagram.renderButton(map.getZoomFactor(), map.getCentralLatitude());
         if (renderDiagramBackground) {
             diagram.render(map.conf);
         }
@@ -111,7 +111,7 @@ $(window).load(function() {"use strict";
 
     function updateZoomSlider() {
         try {
-            var mapScale = Math.round(map.getMapScale() * 100);
+            var mapScale = Math.round(map.getZoomFactor() * 100);
             if ($("#zoom-slider").slider('value') !== mapScale) {
                 $("#zoom-slider").slider({
                     value : mapScale
@@ -122,11 +122,11 @@ $(window).load(function() {"use strict";
         }
     }
 
-    function diagramChangeListener(lat0, mapScale) {
+    function diagramChangeListener(lat0, mapZoomFactor) {
         if (map.getCentralLatitude() < 0) {
             lat0 = -lat0;
         }
-        map.setCentralLatitudeAndScale(lat0, mapScale);
+        map.setCentralLatitudeAndZoomFactor(lat0, mapZoomFactor);
         // adjust the zoom slider
         updateZoomSlider();
     }
@@ -134,7 +134,7 @@ $(window).load(function() {"use strict";
     function projectionChangeListener(map) {
         var mapScale, lat0;
 
-        mapScale = map.getMapScale();
+        mapScale = map.getZoomFactor();
         lat0 = map.getCentralLatitude();
         if (diagram) {
             diagram.renderButton(mapScale, lat0);
@@ -182,7 +182,7 @@ $(window).load(function() {"use strict";
                 lon0 = slippyMap.getCenter().lon / 180 * Math.PI;
                 lat0 = slippyMap.getCenter().lat / 180 * Math.PI;
                 map.setCenter(lon0, lat0);
-                map.setMapScale(MERCATOR_LIMIT_2);
+                map.setZoomFactor(MERCATOR_LIMIT_2);
                 vectorMapParent.style.visibility = 'visible';
                 slippyMapParent.style.visibility = 'hidden';
                 map.render();
@@ -258,8 +258,8 @@ $(window).load(function() {"use strict";
     // add a zoom slider
     $(function() {
         function action(event, ui) {
-            if (Math.abs(ui.value / 100 - map.getMapScale()) > 0.01) {
-                map.setMapScale(ui.value / 100);
+            if (Math.abs(ui.value / 100 - map.getZoomFactor()) > 0.01) {
+                map.setZoomFactor(ui.value / 100);
                 renderMap_Diagram_InfoText();
             }
         }
@@ -270,7 +270,7 @@ $(window).load(function() {"use strict";
             range : "min",
             min : 0,
             max : 2000,
-            value : map.getMapScale() * 100,
+            value : map.getZoomFactor() * 100,
             change : action,
             slide : action
         });
@@ -280,7 +280,7 @@ $(window).load(function() {"use strict";
     $(function() {
         function writeValue() {
             var txt, scaleLimits, sep = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-            scaleLimits = map.getScaleLimits(1);
+            scaleLimits = map.getZoomLimits(1);
             txt = scaleLimits[0].toFixed(2) + sep;
             txt += scaleLimits[1].toFixed(2) + sep;
             txt += scaleLimits[2].toFixed(2) + sep;
@@ -291,7 +291,7 @@ $(window).load(function() {"use strict";
 
         function action(event, ui) {
             ui.values.sort();
-            map.setScaleLimits(ui.values, 100);
+            map.getZoomLimits(ui.values, 100);
             writeValue();
             renderMap_Diagram_InfoText(true);
         }
@@ -301,7 +301,7 @@ $(window).load(function() {"use strict";
             orientation : "horizontal",
             min : 100,
             max : 1000,
-            values : map.getScaleLimits(100),
+            values : map.getZoomLimits(100),
             change : action,
             slide : action
         });
@@ -466,7 +466,7 @@ $(window).load(function() {"use strict";
     $("#rotateSmallScaleCheckbox").on("click", function() {
         map.setRotateSmallScales(this.checked);
         map.render();
-        diagram.renderButton(map.getMapScale(), map.getCentralLatitude());
+        diagram.renderButton(map.getZoomFactor(), map.getCentralLatitude());
     });
 
     $("#changeScaleCheckbox").on("click", function() {
@@ -508,7 +508,7 @@ $(window).load(function() {"use strict";
         subject = "Adaptive Composite Map - Problem Report";
         infoText = "Problem: [Please describe the problem here]";
         body_center = "%0A%0ACurrent Settings%0ACentral longitude: " + (map.conf.lon0 / Math.PI * 180) + "%0A Central latitude: " + (map.conf.lat0 / Math.PI * 180);
-        body_scale = "%0AScale: " + map.getMapScale();
+        body_scale = "%0AScale: " + map.getZoomFactor();
         body_projection = "%0AProjection: " + projection.toString();
         map_name = document.getElementById('mapSelectionMenu');
         body_name = "%0AMap: " + map_name.options[map_name.selectedIndex].text;

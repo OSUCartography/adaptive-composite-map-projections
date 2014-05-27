@@ -207,11 +207,11 @@ function ProjectionDiagram(parent, diagramChangeListener) {"use strict";
         var yWebMercatorLat = XYMARGIN + innerHeight - WEB_MERCATOR_MAX_LAT * vScale;
 
         // horizontal canvas coordinates
-        var xLimit1 = XYMARGIN + (conf.scaleLimit1 * hScale);
-        var xLimit2 = XYMARGIN + (conf.scaleLimit2 * hScale);
-        var xLimit3 = XYMARGIN + (conf.scaleLimit3 * hScale);
-        var xLimit4 = XYMARGIN + (conf.scaleLimit4 * hScale);
-        var xLimit5 = XYMARGIN + (conf.scaleLimit5 * hScale);
+        var xLimit1 = XYMARGIN + (conf.zoomLimit1 * hScale);
+        var xLimit2 = XYMARGIN + (conf.zoomLimit2 * hScale);
+        var xLimit3 = XYMARGIN + (conf.zoomLimit3 * hScale);
+        var xLimit4 = XYMARGIN + (conf.zoomLimit4 * hScale);
+        var xLimit5 = XYMARGIN + (conf.zoomLimit5 * hScale);
         var xMercator1 = XYMARGIN + (conf.mercatorLimit1 * hScale);
         var xMercator2 = XYMARGIN + (conf.mercatorLimit2 * hScale);
 
@@ -220,8 +220,8 @@ function ProjectionDiagram(parent, diagramChangeListener) {"use strict";
         // vertical scale limits
         ctx.lineWidth = 2;
         ctx.strokeStyle = '#000000';
-        verticalLine(ctx, conf.scaleLimit1);
-        verticalLine(ctx, conf.scaleLimit2);
+        verticalLine(ctx, conf.zoomLimit1);
+        verticalLine(ctx, conf.zoomLimit2);
         verticalLine(ctx, conf.mercatorLimit1);
         solidLine(ctx, xMercator2, canvas.height, xMercator2, yWebMercatorLat);
 
@@ -232,14 +232,14 @@ function ProjectionDiagram(parent, diagramChangeListener) {"use strict";
         // for landscape format
         if (isLandscape) {
             // compute latitude on curve separating the azimuthal from the conic
-            var y = canvasXY2UnscaledXY(canvas.width / 2, 0, conf.scaleLimit4)[1];
-            var polarUpperLatAtXLimit4 = ProjectionFactory.polarLatitudeLimitForAlbersConic(y, conf.scaleLimit4);
+            var y = canvasXY2UnscaledXY(canvas.width / 2, 0, conf.zoomLimit4)[1];
+            var polarUpperLatAtXLimit4 = ProjectionFactory.polarLatitudeLimitForAlbersConic(y, conf.zoomLimit4);
             var yPolarUpperLatAtXLimit4 = XYMARGIN + innerHeight - polarUpperLatAtXLimit4 * vScale;
 
             // curved line separating the azimuthal from the conic
             ctx.beginPath();
             ctx.moveTo(xLimit4, yPolarUpperLatAtXLimit4);
-            var lat, xPolarUpperLimitAtDefaultLat, s = conf.scaleLimit4;
+            var lat, xPolarUpperLimitAtDefaultLat, s = conf.zoomLimit4;
             do {
                 xPolarUpperLimitAtDefaultLat = s * hScale + XYMARGIN;
                 y = canvasXY2UnscaledXY(canvas.width / 2, 0, s)[1];
@@ -278,11 +278,11 @@ function ProjectionDiagram(parent, diagramChangeListener) {"use strict";
             solidLine(ctx, xLimit4, canvas.height, xLimit5, yCylindricalLowerLat, xMercator1, yCylindricalLowerLat);
 
             //scale limit 4
-            verticalLine(ctx, conf.scaleLimit4);
+            verticalLine(ctx, conf.zoomLimit4);
 
             //scale limit 5
-            lat = ProjectionFactory.polarLatitudeLimitForAlbersConic(yPolarUpperLatDefault, conf.scaleLimit5);
-            y = canvasXY2UnscaledXY(canvas.width / 2, 0, conf.scaleLimit5)[1];
+            lat = ProjectionFactory.polarLatitudeLimitForAlbersConic(yPolarUpperLatDefault, conf.zoomLimit5);
+            y = canvasXY2UnscaledXY(canvas.width / 2, 0, conf.zoomLimit5)[1];
             lat = ProjectionFactory.polarLatitudeLimitForAlbersConic(y, s);
             y = Math.max(XYMARGIN + innerHeight - lat * vScale, yPolarUpperLatDefault);
             dashedLine(ctx, xLimit5, y, xLimit5, yCylindricalLowerLat);
@@ -295,8 +295,8 @@ function ProjectionDiagram(parent, diagramChangeListener) {"use strict";
             dashedLine(ctx, xLimit3, yPolarLowerLat, xMercator1, yPolarLowerLat);
 
         } else if (isPortrait) {
-            verticalLine(ctx, conf.scaleLimit4);
-            verticalLine(ctx, conf.scaleLimit5);
+            verticalLine(ctx, conf.zoomLimit4);
+            verticalLine(ctx, conf.zoomLimit5);
         }
 
         //Text
@@ -310,7 +310,7 @@ function ProjectionDiagram(parent, diagramChangeListener) {"use strict";
         //Small-scale Projection Text
         ctx.textAlign = "center";
         ctx.font = FONT_LARGE;
-        var cx = conf.scaleLimit1 / 2 * hScale + XYMARGIN;
+        var cx = conf.zoomLimit1 / 2 * hScale + XYMARGIN;
         var cy = tPos - LINE_HEIGHT_LARGE;
         var smallScaleProj = ProjectionFactory.getSmallScaleProjection(conf.smallScaleProjectionName);
         if (smallScaleProj) {
@@ -464,7 +464,7 @@ function ProjectionDiagram(parent, diagramChangeListener) {"use strict";
         var h = canvas.height - XYMARGIN - ctx.lineWidth / 2;
         ctx.strokeRect(XYMARGIN, XYMARGIN, w, h);
 
-        this.renderButton(conf.mapScale, conf.lat0);
+        this.renderButton(conf.zoomFactor, conf.lat0);
     };
 
     function diagramMouseDown(e) {

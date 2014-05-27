@@ -26,17 +26,17 @@ function Graticule(style, scaleVisibility, poleRadiusPx, poleDistPx) {"use stric
 	// each graticule line segment between two intersection points of the graticule (where parallels
 	// and meridians intersect) is subdivided this many times.   
 	Graticule.GRATICULE_DIV = 5;
-	Graticule.getGraticuleSpacing = function(relativeMapScale) {
+	Graticule.getGraticuleSpacing = function(zoomFactor) {
 
 		// FIXME: make this configurable
 		var d = 5;
-		if (relativeMapScale < 1.5) {
+		if (zoomFactor < 1.5) {
 			d = 45;
-		} else if (relativeMapScale < 3) {
+		} else if (zoomFactor < 3) {
 			d = 30;
-		} else if (relativeMapScale < 6) {
+		} else if (zoomFactor < 6) {
 			d = 15;
-		} else if (relativeMapScale < 13) {
+		} else if (zoomFactor < 13) {
 			d = 10;
 		}
 		return d * Math.PI / 180;
@@ -161,9 +161,9 @@ function Graticule(style, scaleVisibility, poleRadiusPx, poleDistPx) {"use stric
 		r = poleRadiusPx / this.mapScale;
 
 		// reduce the radius for scales smaller than 1
-		if (this.relativeMapScale < 1) {
+		if (this.zoomFactor < 1) {
 			// scale radius with MIN_RELATIVE_POLE_RADIUS for a scale of 1.
-			r *= (MIN_RELATIVE_POLE_RADIUS + (1 - MIN_RELATIVE_POLE_RADIUS) * this.relativeMapScale);
+			r *= (MIN_RELATIVE_POLE_RADIUS + (1 - MIN_RELATIVE_POLE_RADIUS) * this.zoomFactor);
 		}
 
 		if (this.rotation) {
@@ -206,7 +206,7 @@ function Graticule(style, scaleVisibility, poleRadiusPx, poleDistPx) {"use stric
 				south : -Math.PI / 2
 			};
 		}
-		spacing = Graticule.getGraticuleSpacing(this.relativeMapScale);
+		spacing = Graticule.getGraticuleSpacing(this.zoomFactor);
 		if (!zoomToMap) {
 			spacing = Math.max(spacing, 30 * Math.PI / 180);
 		}
@@ -242,16 +242,9 @@ function Graticule(style, scaleVisibility, poleRadiusPx, poleDistPx) {"use stric
 		// find out whether poles should be drawn as points and meridians shortened near poles
 		// FIXME
 		var POLE_TOL = 0.3 / 180 * Math.PI;
-		if (this.relativeMapScale < this.map.getScaleLimits()[0]) {
-			// A world map projection is used and the map is only partially visible.
-			// Only draw poles as dots if the map is rotated.
-			shortenMeridiansNearPoles = this.map.isRotateSmallScale() && Math.abs(this.map.getCentralLatitude()) > POLE_TOL;
-		} else {
-			// A world map projection is used and the entire globe is visible, or a projection
-			// for medium or large scales is used.
-			// Draw the poles as dots if the central latitude is not the equator
-			shortenMeridiansNearPoles = Math.abs(this.map.getCentralLatitude()) > POLE_TOL;
-		}
+		// draw poles as dots if the map is rotated.
+		shortenMeridiansNearPoles = this.map.isRotateSmallScale() && Math.abs(this.map.getCentralLatitude()) > POLE_TOL;
+		
 		poleDist = shortenMeridiansNearPoles ? (poleDistPx / this.mapScale) : 0;
 
 		// id of the central meridian

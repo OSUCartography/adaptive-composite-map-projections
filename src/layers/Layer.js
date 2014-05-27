@@ -257,7 +257,7 @@ function AbstractLayer(style, scaleVisibility) {"use strict";
 
 		if (style.hasOwnProperty("lineWidth")) {
 			// interpolate scale-dependent line width if a series of values is specified
-			this.lineWidth = AbstractLayer.getScaleInterpolatedValue(style.lineWidth, "width", this.relativeMapScale);
+			this.lineWidth = AbstractLayer.getScaleInterpolatedValue(style.lineWidth, "width", this.zoomFactor);
 			ctx.lineWidth = this.lineWidth / this.mapScale;
 		}
 	};
@@ -282,7 +282,7 @@ function AbstractLayer(style, scaleVisibility) {"use strict";
 		if ( scaleVisibility instanceof Object === false) {
 			return true;
 		}
-		if (this.relativeMapScale < scaleVisibility.layerMinScale || this.relativeMapScale >= scaleVisibility.layerMaxScale) {
+		if (this.zoomFactor < scaleVisibility.layerMinScale || this.zoomFactor >= scaleVisibility.layerMaxScale) {
 			return false;
 		}
 		return true;
@@ -311,7 +311,7 @@ function AbstractLayer(style, scaleVisibility) {"use strict";
 	 * Linearly interpolates a value with scale. The value is defined by a series of
 	 * scale - value pairs stored in an array.
 	 */
-	AbstractLayer.getScaleInterpolatedValue = function(values, valName, relativeMapScale) {
+	AbstractLayer.getScaleInterpolatedValue = function(values, valName, zoomFactor) {
 
 		var rec1, rec2, i, w;
 
@@ -325,16 +325,16 @@ function AbstractLayer(style, scaleVisibility) {"use strict";
 			}
 
 			// map scale is larger than the largest scale in the input array
-			if (relativeMapScale > values[values.length - 1].scale) {
+			if (zoomFactor > values[values.length - 1].scale) {
 				return values[values.length - 1][valName];
 			}
 
 			// interpolate value
 			for ( i = values.length - 2; i >= 0; i -= 1) {
 				rec1 = values[i];
-				if (relativeMapScale >= rec1.scale) {
+				if (zoomFactor >= rec1.scale) {
 					rec2 = values[i + 1];
-					w = (relativeMapScale - rec1.scale) / (rec2.scale - rec1.scale);
+					w = (zoomFactor - rec1.scale) / (rec2.scale - rec1.scale);
 					return (1 - w) * rec1[valName] + w * rec2[valName];
 				}
 			}

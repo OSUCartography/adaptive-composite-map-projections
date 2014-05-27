@@ -20,7 +20,7 @@ function PolarCircles(style, scaleVisibility) {"use strict";
         this.applyStyle(ctx);
         this.setupTransformation(ctx);
         bb = this.visibleGeographicBoundingBoxCenteredOnLon0;
-        spacing = Graticule.getGraticuleSpacing(this.relativeMapScale);
+        spacing = Graticule.getGraticuleSpacing(this.zoomFactor);
         lineSegment = spacing / Graticule.GRATICULE_DIV;
         ctx.beginPath();
         Graticule.addParallelPathToCanvas(this.projection, this.rotation, ctx, this.LAT, bb.west, bb.east, lineSegment);

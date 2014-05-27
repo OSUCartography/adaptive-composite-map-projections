@@ -53,7 +53,7 @@ function MapEvents(map) {"use strict";
 
         startLon = map.getCentralLongitude();
         startLat = map.getCentralLatitude();
-        startScale = map.getMapScale();
+        startScale = map.getZoomFactor();
         startTime = new Date().getTime();
         endTime = startTime + params.duration;
 
@@ -68,7 +68,7 @@ function MapEvents(map) {"use strict";
                 lat0 = ((params.endLat - startLat) / (endTime - startTime)) * (currTime - startTime) + startLat;
                 map.setCenter(lon0, lat0);
                 mapScale = ((params.endScale - startScale) / (endTime - startTime)) * (currTime - startTime) + startScale;
-                map.setMapScale(mapScale); 
+                map.setZoomFactor(mapScale); 
             }
         }, 1000 / params.fps);
     }
@@ -87,7 +87,7 @@ function MapEvents(map) {"use strict";
             endLonLat[1] = map.getCentralLatitude();
         }
 
-        endScale = map.getMapScale() * TOUCH_DOUBLE_TAP_SCALE_FACTOR;
+        endScale = map.getZoomFactor() * TOUCH_DOUBLE_TAP_SCALE_FACTOR;
 
         // FIXME
         if (endScale > MERCATOR_LIMIT_2) {
@@ -157,7 +157,7 @@ function MapEvents(map) {"use strict";
                 canSnapToEquator = !( projection instanceof LambertCylindricalEqualArea);
             }
             // snap tolerance is getting smaller with increasing map scale
-            if (canSnapToEquator && Math.abs(map.getCentralLatitude() - dLat) < SNAP_TOLERANCE_ANGLE / Math.max(1, map.getMapScale())) {
+            if (canSnapToEquator && Math.abs(map.getCentralLatitude() - dLat) < SNAP_TOLERANCE_ANGLE / Math.max(1, map.getZoomFactor())) {
                 // this will result in lat0 equal to 0
                 dLat = map.getCentralLatitude();
             }
@@ -235,7 +235,7 @@ function MapEvents(map) {"use strict";
 
     // FIXME not tested
     Hammer(map.getParent()).on("transformstart", function(ev) {
-        startTransformMapScale = map.getMapScale();
+        startTransformMapScale = map.getZoomFactor();
     });
 
     // FIXME not tested
@@ -251,12 +251,12 @@ function MapEvents(map) {"use strict";
          * gesture is pinch open to zoom in.
          */
 
-        map.setMapScale(ev.scale * startTransformMapScale);
+        map.setZoomFactor(ev.scale * startTransformMapScale);
 
         // transition to the mercator slippy map
         // FIXME ?
-        if (map.getMapScale() > MERCATOR_LIMIT_2) {
-            map.setMapScale(map.getMapScale() + 0.1);
+        if (map.getZoomFactor() > MERCATOR_LIMIT_2) {
+            map.setZoomFactor(map.getZoomFactor() + 0.1);
             startTransformMapScale = null;
         }
         map.render(true);

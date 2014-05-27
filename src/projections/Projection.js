@@ -70,7 +70,7 @@ ProjectionFactory.getSmallScaleProjection = function(smallScaleProjectionName) {
 ProjectionFactory.create = function(conf) {
 
     function smallScaleVerticalShift(conf, proj) {
-        if (conf.lat0 === 0 || conf.mapScale < 1) {
+        if (conf.lat0 === 0 || conf.zoomFactor < 1) {
             return 0;
         }
         var mapH = conf.mapDimension[1];
@@ -128,16 +128,16 @@ ProjectionFactory.create = function(conf) {
 
     function getMediumToLargeScaleProjectionForPortraitFormat(conf) {
 		var projection = new TransformedLambertAzimuthalTransverse(),
-		w = (conf.scaleLimit5 - conf.mapScale) / (conf.scaleLimit5 - conf.scaleLimit4);
+		w = (conf.zoomLimit5 - conf.zoomFactor) / (conf.zoomLimit5 - conf.zoomLimit4);
 		projection.initialize(conf, w);
 		return new TransformedProjection(projection, 0, Math.PI - conf.lat0, true);
     }
 
     function useCylindrical(conf) {
         var xy = [];
-        var m = conf.cylindricalLowerLat / (conf.scaleLimit5 - conf.scaleLimit4);
-        var c = conf.cylindricalLowerLat - m * conf.scaleLimit5;
-        var latLimit = m * conf.mapScale + c;
+        var m = conf.cylindricalLowerLat / (conf.zoomLimit5 - conf.zoomLimit4);
+        var c = conf.cylindricalLowerLat - m * conf.zoomLimit5;
+        var latLimit = m * conf.zoomFactor + c;
 
         // FIXME hack: add transformation from azimuthal to cylindrical
         // replace if condition with 
@@ -158,7 +158,7 @@ ProjectionFactory.create = function(conf) {
 
     function getMediumToLargeScaleConicProjectionForLandscapeFormat(conf) {
 
-        // Scale is between conf.scaleLimit4 and conf.scaleLimit5.
+        // Scale is between conf.zoomLimit4 and conf.zoomLimit5.
         // Use an oblique Albers conic projection that smoothly blends between
         // the medium scale azimuthal and the large scale conic as scale changes.
         // For scales close to the medium-scale azimuthal projection, the two standard
@@ -168,13 +168,13 @@ ProjectionFactory.create = function(conf) {
         // central latitude to the center of the canvas.
 
         // compute rotation angle and vertical shift applied to medium-scale
-        // azimuthal projection for the scale equal to conf.scaleLimit4
+        // azimuthal projection for the scale equal to conf.zoomLimit4
 
         var azimuthalProj = new LambertAzimuthalEqualAreaOblique();
         azimuthalProj.initialize(conf);
 
         // compute the vertical shift
-        var w = (conf.scaleLimit5 - conf.mapScale) / (conf.scaleLimit5 - conf.scaleLimit4);
+        var w = (conf.zoomLimit5 - conf.zoomFactor) / (conf.zoomLimit5 - conf.zoomLimit4);
         var dy = Math.abs(conf.topPt[1] - conf.bottomPt[1]) / 2 * w;
         if (conf.lat0 < 0) {
             dy = -dy;
@@ -209,7 +209,7 @@ ProjectionFactory.create = function(conf) {
         }
 
         // blend values for the oblique conic
-        var w1 = (conf.scaleLimit5 - conf.mapScale) / (conf.scaleLimit5 - conf.scaleLimit4);
+        var w1 = (conf.zoomLimit5 - conf.zoomFactor) / (conf.zoomLimit5 - conf.zoomLimit4);
         var w2 = 1 - w1;
         var obliqueConicConf = {
             lat0 : w1 * lat0Azimuthal + w2 * lat0Conic,
@@ -250,16 +250,16 @@ ProjectionFactory.create = function(conf) {
         landscapeFormat = (conf.canvasHeight / conf.canvasWidth) < conf.formatRatioLimit;
         if (landscapeFormat) {
             // interpolate lat0 of Lambert azimuthal projection. For scales larger
-            // than conf.scaleLimit4, a polar azimuthal without spherical rotation is used near poles.
+            // than conf.zoomLimit4, a polar azimuthal without spherical rotation is used near poles.
             // Interpolate towards this polar projection.
             dy = Math.PI / 2 - conf.polarUpperLat;
-            dx = conf.scaleLimit4 - conf.scaleLimit2;
+            dx = conf.zoomLimit4 - conf.zoomLimit2;
             m = -dy / dx;
-            c = Math.PI / 2 - m * conf.scaleLimit2;
-            y = conf.mapScale * m + c;
+            c = Math.PI / 2 - m * conf.zoomLimit2;
+            y = conf.zoomFactor * m + c;
             if (Math.abs(conf.lat0) > y) {
                 xl = (Math.abs(conf.lat0) - c) / m;
-                w = (conf.mapScale - xl) / (conf.scaleLimit4 - xl);
+                w = (conf.zoomFactor - xl) / (conf.zoomLimit4 - xl);
                 
                 // lat0 is 90deg when north pole is at the center of the map 
                 poleSign = (conf.lat0 > 0) ? 1 : -1;
@@ -277,7 +277,7 @@ ProjectionFactory.create = function(conf) {
     }
 
     /**
-     * Returns a projection for a zoom level between conf.scaleLimit1 and conf.scaleLimit2.
+     * Returns a projection for a zoom level between conf.zoomLimit1 and conf.zoomLimit2.
      * Creates a transformed Lambert azimuthal or a mix of two projection.
      * For both cases, a vertical shift may be needed if the projection for world maps cannot be rotated.
      */
@@ -287,7 +287,7 @@ ProjectionFactory.create = function(conf) {
         projection = ProjectionFactory.getSmallScaleProjection(conf.smallScaleProjectionName);
 
         // weight is linear interpolation between two scale limits
-        w = (conf.scaleLimit2 - conf.mapScale) / (conf.scaleLimit2 - conf.scaleLimit1);
+        w = (conf.zoomLimit2 - conf.zoomFactor) / (conf.zoomLimit2 - conf.zoomLimit1);
 
         if ( projection instanceof TransformedLambertAzimuthal) {
             // Use a weight for a smooth transition from the transformed to the regular Lambert azimuthal projection
@@ -330,7 +330,7 @@ ProjectionFactory.create = function(conf) {
             // portrait or landscape format
             mercator = new Mercator();
             mercator.initialize(conf);
-            w = 1 - (conf.mapScale - conf.mercatorLimit1) / (conf.mercatorLimit2 - conf.mercatorLimit1);
+            w = 1 - (conf.zoomFactor - conf.mercatorLimit1) / (conf.mercatorLimit2 - conf.mercatorLimit1);
             p1 = ProjectionFactory.createLargeScaleProjection(conf);
             p1.initialize(conf);
             return new WeightedProjectionMix(p1, mercator, w);
@@ -340,7 +340,7 @@ ProjectionFactory.create = function(conf) {
             // this works, but is not compatibel with vertex shader, because only one of the the projections is rotated.
             p1 = TransformedLambertAzimuthal.LambertCylindrical();
             // weight is linearly interpolated between the two Mercator scale limits
-            w = (conf.mercatorLimit2 - conf.mapScale) / (conf.mercatorLimit2 - conf.mercatorLimit1);
+            w = (conf.mercatorLimit2 - conf.zoomFactor) / (conf.mercatorLimit2 - conf.mercatorLimit1);
             p1.transformToLambertAzimuthal(1 - w);
             poleLat = Math.PI / 2 - conf.lat0;
             var t = new TransformedProjection(p1, 0, poleLat, false);
@@ -348,7 +348,7 @@ ProjectionFactory.create = function(conf) {
             */
             // same as commented code above, but packaged into a separate projection.
             // vertex shader will see this as a separate projection and use different schema for texture mapping
-            w = (conf.mercatorLimit2 - conf.mapScale) / (conf.mercatorLimit2 - conf.mercatorLimit1);
+            w = (conf.mercatorLimit2 - conf.zoomFactor) / (conf.mercatorLimit2 - conf.mercatorLimit1);
             var transProj = new LambertMercatorTransformation(w);
             transProj.initialize(conf);
             return transProj;
@@ -372,10 +372,10 @@ ProjectionFactory.create = function(conf) {
 
     /**
      * Use a section of an azimuthal Lambert graticule to make sure the wedge of
-     * the Albers conic projection is not visible at larger scales (i.e., scale > conf.scaleLimit4).
-     * Not the central part of the graticule is used, but as conf.scaleLimit4
+     * the Albers conic projection is not visible at larger scales (i.e., scale > conf.zoomLimit4).
+     * Not the central part of the graticule is used, but as conf.zoomLimit4
      * is approached, a section shifted towards the equator is used.
-     * When the scale equals conf.scaleLimit4, the upper border of the
+     * When the scale equals conf.zoomLimit4, the upper border of the
      * graticule equals conf.lat0. This ensures that the wedge of
      * the conic Albers projection is not visible on the map. This wedge
      * vertically disects the graticule from lat0 to the closer pole.
@@ -399,15 +399,15 @@ ProjectionFactory.create = function(conf) {
             // azimuthal projection close to poles needs special treatment
             // an oblique line forming the upper limit for shifting and rotating the
             // azimuthal projection
-            m = (conf.polarUpperLat - conf.polarLowerLat) / (conf.scaleLimit4 - conf.scaleLimit3);
-            c = conf.polarUpperLat - m * conf.scaleLimit4;
-            latLimit = m * conf.mapScale + c;
+            m = (conf.polarUpperLat - conf.polarLowerLat) / (conf.zoomLimit4 - conf.zoomLimit3);
+            c = conf.polarUpperLat - m * conf.zoomLimit4;
+            latLimit = m * conf.zoomFactor + c;
             if (absLat0 < latLimit) {
                 // lat0 is below the oblique line. Use horizontal interpolation
-                // between an oblique line (pos. slope) and a vertical line at conf.scaleLimit4
+                // between an oblique line (pos. slope) and a vertical line at conf.zoomLimit4
                 // position on oblique line at lat0
                 scaleLimit = (absLat0 - c) / m;
-                w = (conf.mapScale - scaleLimit) / (conf.scaleLimit4 - scaleLimit);
+                w = (conf.zoomFactor - scaleLimit) / (conf.zoomLimit4 - scaleLimit);
             } else {
                 // lat0 is above the oblique line, use normal azimuthal projection (w = 0)
                 return azimuthalProj;
@@ -415,7 +415,7 @@ ProjectionFactory.create = function(conf) {
         } else if (absLat0 < conf.cylindricalLowerLat) {
             /*
             // FIXME hack: add transformation from azimuthal to cylindrical
-            w = (conf.mapScale - conf.scaleLimit3) / (conf.scaleLimit4 - conf.scaleLimit3);
+            w = (conf.zoomFactor - conf.zoomLimit3) / (conf.zoomLimit4 - conf.zoomLimit3);
             var cylProj = TransformedLambertAzimuthal.LambertCylindrical();
             cylProj.transformToLambertAzimuthal(w);
             var dy = -w * conf.lat0;
@@ -426,21 +426,21 @@ ProjectionFactory.create = function(conf) {
             
              // azimuthal projection close to equator needs special treatment
              // an oblique line forming the lower limit for shifting and rotating the azimuthal projection
-             m = -conf.cylindricalLowerLat / (conf.scaleLimit4 - conf.scaleLimit3);
-             c = conf.cylindricalLowerLat - m * conf.scaleLimit3;
-             y = m * conf.mapScale + c;
+             m = -conf.cylindricalLowerLat / (conf.zoomLimit4 - conf.zoomLimit3);
+             c = conf.cylindricalLowerLat - m * conf.zoomLimit3;
+             y = m * conf.zoomFactor + c;
              if (absLat0 > y) {
              // lat0 is above the oblique line. Use horizontal interpolation
-             // between an oblique line (neg. slope) and a vertical line at conf.scaleLimit4
+             // between an oblique line (neg. slope) and a vertical line at conf.zoomLimit4
              scaleLimit = (absLat0 - c) / m;
-             w = (conf.mapScale - scaleLimit) / (conf.scaleLimit4 - scaleLimit);
+             w = (conf.zoomFactor - scaleLimit) / (conf.zoomLimit4 - scaleLimit);
              } else {
              // lat0 is below the oblique line, use normal azimuthal projection (w = 0)
              return azimuthalProj;
              }
         } else {
             // horizontal interpolation between two scales (two vertical lines in the diagram)
-            w = (conf.mapScale - (conf.scaleLimit3)) / (conf.scaleLimit4 - conf.scaleLimit3);
+            w = (conf.zoomFactor - (conf.zoomLimit3)) / (conf.zoomLimit4 - conf.zoomLimit3);
         }
 
         // the conic wedge starts at the center of the map
@@ -475,38 +475,38 @@ ProjectionFactory.create = function(conf) {
 
         landscapeAspectRatio = (conf.canvasHeight / conf.canvasWidth) < conf.formatRatioLimit;
 
-        if (conf.mapScale > conf.mercatorLimit2) {
+        if (conf.zoomFactor > conf.mercatorLimit2) {
             // use Mercator for largest scales
             projection = new Mercator();
             projection.initialize(conf);
-        } else if (conf.mapScale > conf.mercatorLimit1) {
+        } else if (conf.zoomFactor > conf.mercatorLimit1) {
             // blend large scale projection and the Mercator projection (used for largest scales)
             projection = getLargeScaleToMercatorProjection(conf);
-        } else if (conf.mapScale > conf.scaleLimit5) {
+        } else if (conf.zoomFactor > conf.zoomLimit5) {
             // large scale projection
             // for landscape aspects, a Lambert azimuthal, Albers conic or a cylindrical
             // for portrait aspects, a transverse cylindrical
             // for square aspects, a Lambert azimuthal
             projection = ProjectionFactory.createLargeScaleProjection(conf);
             projection.initialize(conf);
-        } else if (conf.mapScale > conf.scaleLimit4) {
+        } else if (conf.zoomFactor > conf.zoomLimit4) {
             // a large scale projection approximating the medium scale projection
             // for landscape aspects, a large scale projection that is vertically shifted to hide the wedge of the conic
             // for portrait aspects, ?
             // for square aspects, a Lambert azimuthal
             projection = getMediumToLargeScaleProjection(conf);
-        } else if (conf.mapScale > conf.scaleLimit3 && landscapeAspectRatio && Math.abs(conf.lat0) < conf.polarUpperLat) {
+        } else if (conf.zoomFactor > conf.zoomLimit3 && landscapeAspectRatio && Math.abs(conf.lat0) < conf.polarUpperLat) {
             // only for landscape aspects
             // Lambert azimuthal vertically shifted for a smooth transition to the shifted large scale projection
             projection = getShiftedMediumScaleLandscapeProjection(conf);
-        } else if (conf.mapScale >= conf.scaleLimit2) {
+        } else if (conf.zoomFactor >= conf.zoomLimit2) {
             // Lambert azimuthal
             projection = getMediumScaleProjection(conf);
-        } else if (conf.mapScale > conf.scaleLimit1) {
+        } else if (conf.zoomFactor > conf.zoomLimit1) {
             // small-scale projection blended with Lambert azimuthal for medium scale
             projection = getSmallToMediumScaleProjection(conf);
         } else {
-            // conf.mapScale < conf.scaleLimit1
+            // conf.zoomFactor < conf.zoomLimit1
             // small-scale projection
             projection = smallScaleTransformation(conf, ProjectionFactory.getSmallScaleProjection(conf.smallScaleProjectionName));
         }

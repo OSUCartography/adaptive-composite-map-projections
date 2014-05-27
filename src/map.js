@@ -1,4 +1,4 @@
-/*globals RasterLayer, VideoLayer, resizeCanvasElement, clone, TransformedProjection */
+/*globals RasterLayer, VideoLayer, resizeCanvasElement, clone, TransformedProjection, TransformedLambertAzimuthal, ProjectionFactory */
 
 // FIXME
 var MERCATOR_LIMIT_1, MERCATOR_LIMIT_2;
@@ -11,7 +11,7 @@ var CONIC_STD_PARALLELS_FRACTION = 1 / 6;
 // is considered to be square.
 var formatRatioLimit = 0.8;
 
-function mouseToCanvasCoordinates(e, parent) { "use strict";
+function mouseToCanvasCoordinates(e, parent) {"use strict";
 	// FIXME there should be a better way for this
 	var node, x = e.clientX, y = e.clientY;
 
@@ -32,115 +32,103 @@ function mouseToCanvasCoordinates(e, parent) { "use strict";
 
 function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChangeListener) {"use strict";
 
-	// scale if map is not zoomed
-	var CONSTANT_SCALE = 0.5;
+	// zoom factor limits where projections change
+	var zoomLimit1 = 1.5, zoomLimit2 = 2, zoomLimit3 = 3, zoomLimit4 = 4, zoomLimit5 = 6,
 
-	// scale limits where projections change
-	var DEF_SCALE_LIMIT_1 = 1.5;
-	var DEF_SCALE_LIMIT_2 = 2;
-	var DEF_SCALE_LIMIT_3 = 3;
-	var DEF_SCALE_LIMIT_4 = 4;
-	var DEF_SCALE_LIMIT_5 = 6;
+	// zoom factor used when the debug option "Zoom Map" is deselected
+	DEBUG_ZOOM_FACTOR = 0.5,
 
-	var MERCATOR_TRANSITION_WIDTH = 0.75;
+	// maximum zoom factor
+	MAX_ZOOM_FACTOR = 100,
+
+	// minimum zoom factor
+	MIN_ZOOM_FACTOR = 0.05,
+
+	// zoom factor relativ to canvas size. A value of 1 means that the map vertically fills the available canvas space.
+	zoomFactor = 0.95,
+
+	// if true, the center of the map and the position of standard parallels are drawn
+	debugDrawOverlayCanvas = false,
+	
+	// if true, the map adjusts its scale
+	debugZoomToMap = true,
+	
+	// if true, a wireframe is rendered for raster layers
+	debugRenderWireframe = false,
+	
+	// if true, the position and extent of the geometry for raster layer are adjusted
+	debugAdaptiveResolutionGrid = true,
+	
+	// Latitude limit between clyindrical and conic projection at large scales
+	// Use cylindrical projection between the equator and cylindricalLowerLat
+	cylindricalLowerLat = 15 * Math.PI / 180,
+	// use transition between cylindricalUpperLat and cylindricalLowerLat
+	cylindricalUpperLat = 22 * Math.PI / 180,
+
+	// use azimuthal projection if central latitude is larger (for large scales)
+	polarUpperLat = 75 * Math.PI / 180,
+	// use transition between polarLowerLat and polarUpperLat
+	polarLowerLat = 60 * Math.PI / 180,
+	
+	// longitude and latitude of the map center in radians
+	mapCenter = {
+		lon0 : 0,
+		lat0 : 30 / 180 * Math.PI
+	},
+
+	// resolution of geometry for raster layer
+	geometryResolution = 500,
+
+	smallScaleMapProjectionName = "Hammer",
+	
+	// if true, oblique world projections can be created
+	rotateSmallScales = true,
+	
+	// if true, the equator snaps to its standard horizontal aspect when dragging
+	snapEquator = true;
 
 	// FIXME should not be global
 	map = this;
+	
+	var MERCATOR_TRANSITION_WIDTH = 0.75;
+	
+	(function setupMercator() {
+		// FIXME: MERCATOR_LIMIT_1 and MERCATOR_LIMIT_2 are not valid when
+		// the small scale projection changes, as they are relative to the small-scale graticule height !?
+	 
+		var mercatorMapSize, smallScaleProjection, graticuleHeight, sf;
+		
+		// size of web mercator in pixels at web map scale where the transition to
+		// the web mercator projection occurs
+		mercatorMapSize = Math.pow(2, 8 + MERCATOR_LIMIT_WEB_MAP_SCALE);
 
-	// if true, the center of the map and the position of standard parallels are drawn
-	var drawOverlayCanvas = false;
+		// height of the adaptive map in coordinates projected with the unary sphere
+		smallScaleProjection = ProjectionFactory.getSmallScaleProjection(smallScaleMapProjectionName);
+		graticuleHeight = 2 * ProjectionFactory.halfCentralMeridianLengthOfSmallScaleProjection(smallScaleProjection);
 
-	// FIXME scale limits should be stored in an array
-	var scaleLimit1 = DEF_SCALE_LIMIT_1;
-	var scaleLimit2 = DEF_SCALE_LIMIT_2;
-	var scaleLimit3 = DEF_SCALE_LIMIT_3;
-	var scaleLimit4 = DEF_SCALE_LIMIT_4;
-	var scaleLimit5 = DEF_SCALE_LIMIT_5;
+		// scale factor to fill the canvas with the projected map
+		sf = canvasHeight / graticuleHeight;
 
-	// FIXME scale limits should be stored in an array
-	this.getScaleLimits = function(factor) {
-		if ( typeof factor !== "number") {
-			factor = 1;
-		}
-		return [scaleLimit1 * factor, scaleLimit2 * factor, scaleLimit3 * factor, scaleLimit4 * factor, scaleLimit5 * factor];
-	};
+		// scale factor where the web mercator is used
+		MERCATOR_LIMIT_2 = mercatorMapSize / (Math.PI * 2 * sf);
 
-	// FIXME scale limits should be stored in an array
-	this.setScaleLimits = function(limits, factor) {
-		scaleLimit1 = limits[0] / factor;
-		scaleLimit2 = limits[1] / factor;
-		scaleLimit3 = limits[2] / factor;
-		scaleLimit4 = limits[3] / factor;
-		scaleLimit5 = limits[4] / factor;
-	};
-
-	// Latitude limit between clyindrical and conic projection at large scales
-	// Use cylindrical projection between the equator and cylindricalLowerLat
-	var cylindricalLowerLat = 15 * Math.PI / 180;
-	// use transition between cylindricalUpperLat and cylindricalLowerLat
-	var cylindricalUpperLat = 22 * Math.PI / 180;
-
-	// use azimuthal projection if central latitude is larger (for large scales)
-	var polarUpperLat = 75 * Math.PI / 180;
-	// use transition between polarLowerLat and polarUpperLat
-	var polarLowerLat = 60 * Math.PI / 180;
-
-	/**
-	 * Use the Mercator projection if scale is larger than the value returned.
-	 * FIXME: MERCATOR_LIMIT_1 and MERCATOR_LIMIT_2 are not valid when
-	 * the small scale projection changes, as they are relative to the small-scale graticule height !?
-	 */
-
-	// size of web mercator in pixels at web map scale where the transition to
-	// the web mercator projection occurs
-	var mercatorMapSize = Math.pow(2, 8 + MERCATOR_LIMIT_WEB_MAP_SCALE);
-
-	// height of the adaptive map in coordinates projected with the unary sphere
-	var smallScaleProjection = ProjectionFactory.getSmallScaleProjection(smallScaleMapProjectionName);
-	var graticuleHeight = 2 * ProjectionFactory.halfCentralMeridianLengthOfSmallScaleProjection(smallScaleProjection);
-
-	// scale factor to fill the canvas with the projected map
-	var r = canvasHeight / graticuleHeight;
-
-	// scale factor where the web mercator is used
-	MERCATOR_LIMIT_2 = mercatorMapSize / (Math.PI * 2 * r);
-
-	/**
-	 * scale factor where the transition towards the web mercator starts
-	 */
-	MERCATOR_LIMIT_1 = MERCATOR_LIMIT_2 - MERCATOR_TRANSITION_WIDTH;
-
-	// longitude and latitude of the map center in radians
-	var mapCenter = {
-		lon0 : 0,
-		lat0 : 16.40137942693096 / 180 * Math.PI
-	};
-
-	// maximum zoom factor
-	var MAX_SCALE = 100;
-
-	// minimum zoom factor
-	var MIN_SCALE = 0.1;
-
-	// zoom level relativ to canvas size. 1: entire map.
-	var mapScale = 0.95;
-
-	var geometryResolution = 500;
-
-	var smallScaleMapProjectionName = "Hammer";
-	var rotateSmallScales = true;
-	var zoomToMap = true;
-	var renderWireframe = false;
-	var adaptiveResolutionGrid = true;
-
-	var snapEquator = true;
-
+		// scale factor where the transition towards the web mercator starts
+		MERCATOR_LIMIT_1 = MERCATOR_LIMIT_2 - MERCATOR_TRANSITION_WIDTH;
+	}());
+	
 	function projectionChanged() {
 		map.updateProjection();
 		projectionChangeListener(map);
 		map.render();
 	}
 
+
+	this.getZoomLimits = function(factor) {
+		if ( typeof factor !== "number") {
+			factor = 1;
+		}
+		return [zoomLimit1 * factor, zoomLimit2 * factor, zoomLimit3 * factor, zoomLimit4 * factor, zoomLimit5 * factor];
+	};
 
 	this.getCentralLatitude = function() {
 		return mapCenter.lat0;
@@ -157,9 +145,9 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		this.render();
 	};
 
-	this.setCentralLatitudeAndScale = function(lat0, scale) {
+	this.setCentralLatitudeAndZoomFactor = function(lat0, zoom) {
 		mapCenter.lat0 = Math.max(Math.min(lat0, Math.PI / 2), -Math.PI / 2);
-		mapScale = scale = Math.max(Math.min(scale, MAX_SCALE), MIN_SCALE);
+		zoomFactor = Math.max(Math.min(zoom, MAX_ZOOM_FACTOR), MIN_ZOOM_FACTOR);
 		projectionChangeListener(map);
 		this.render();
 	};
@@ -171,22 +159,21 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		this.render();
 	};
 
-	this.getMapScale = function() {
-		return mapScale;
+	this.getZoomFactor = function() {
+		return zoomFactor;
 	};
 
-	this.setMapScale = function(s) {
-		mapScale = Math.max(MIN_SCALE, Math.min(s, MAX_SCALE));
+	this.setZoomFactor = function(s) {
+		zoomFactor = Math.max(MIN_ZOOM_FACTOR, Math.min(s, MAX_ZOOM_FACTOR));
 		projectionChangeListener(map);
 		this.render();
 	};
 
 	this.isUsingWorldMapProjection = function() {
-		return mapScale < scaleLimit1;
+		return zoomFactor < zoomLimit1;
 	};
 
 	// Compute scale factor such that the graticule fits vertically onto the canvas.
-	// This defines mapScale = 1
 	function referenceScaleFactor() {
 		var smallScaleProjection, graticuleHeight;
 		smallScaleProjection = ProjectionFactory.getSmallScaleProjection(smallScaleMapProjectionName);
@@ -194,14 +181,14 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		return canvasHeight / graticuleHeight;
 	}
 
-	// invert the offset and scaling applied when rendering the map layers
+	// invert the offset and map scale applied when rendering the map layers
 	this.canvasXYToUnscaledXY = function(x, y) {
 		var cx, cy, scale;
 		cx = canvasWidth / 2;
 		cy = canvasHeight / 2;
 		x -= cx;
 		y = cy - y;
-		scale = referenceScaleFactor() * mapScale;
+		scale = referenceScaleFactor() * zoomFactor;
 		return [x / scale, y / scale];
 	};
 
@@ -228,9 +215,9 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		}
 		proj.forward(lon, lat, pt);
 
-		// x = canvas.width / 2 + x * mapScale
-		// y = canvas.height / 2 - dy - y * mapScale
-		scale = referenceScaleFactor() * mapScale;
+		// x = canvas.width / 2 + x * zoomFactor
+		// y = canvas.height / 2 - dy - y * zoomFactor
+		scale = referenceScaleFactor() * zoomFactor;
 
 		dy = ( typeof proj.getFalseNorthing === 'function') ? proj.getFalseNorthing() : 0;
 		centerX = canvasWidth / 2;
@@ -243,31 +230,31 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 	this.updateProjection = function() {
 
 		// The graticule of the transformed Lambert azimuthal projection has an invard pointing wedge
-		// when w is between 0.5 and 1. To make sure this wedge is not visible, the scale limit is adjusted
+		// when w is between 0.5 and 1. To make sure this wedge is not visible, the zoom factor limit is adjusted
 		// where the transformed Lambert azimuthal projection is used.
-		var scaleLimit = scaleLimit1;
-		var isLandscape = (canvasHeight / canvasWidth) < formatRatioLimit;
-		// FIXME add blending of scaleLimit for smooth transition after the aspect ratio of the
-		// map changed (e.g. when resizing the window)
+		var zoomLimit, isLandscape, mapTop, xy;
+		zoomLimit = zoomLimit1;
+		isLandscape = (canvasHeight / canvasWidth) < formatRatioLimit;
 		if (!isLandscape) {
-			var mapTop = this.canvasXYToUnscaledXY(canvasWidth / 2, 0)[1] * mapScale;
-			var xy = [];
+			mapTop = this.canvasXYToUnscaledXY(canvasWidth / 2, 0)[1] * zoomFactor;
+			xy = [];
 			TransformedLambertAzimuthal.Hammer().forward(0, Math.PI / 2, xy);
-			scaleLimit = mapTop / xy[1];
+			zoomLimit = mapTop / xy[1];
 		}
 
+		// FIXME this needs to be simplified
 		this.conf = {
-			mapScale : mapScale,
+			zoomFactor : zoomFactor,
 			lon0 : mapCenter.lon0,
 			lat0 : mapCenter.lat0,
 			lat1 : NaN,
 			lat2 : NaN,
-			scaleLimit1 : scaleLimit,
-			// FIXME scaleLimit2 - scaleLimit1
-			scaleLimit2 : scaleLimit + (scaleLimit2 - scaleLimit1),
-			scaleLimit3 : scaleLimit3,
-			scaleLimit4 : scaleLimit4,
-			scaleLimit5 : scaleLimit5,
+			zoomLimit1 : zoomLimit,
+			// FIXME zoomLimit2 - zoomLimit1
+			zoomLimit2 : zoomLimit + (zoomLimit2 - zoomLimit1),
+			zoomLimit3 : zoomLimit3,
+			zoomLimit4 : zoomLimit4,
+			zoomLimit5 : zoomLimit5,
 			mercatorLimit1 : MERCATOR_LIMIT_1,
 			mercatorLimit2 : MERCATOR_LIMIT_2,
 			centerXY : this.canvasXYToUnscaledXY(canvasWidth / 2, canvasHeight / 2),
@@ -288,23 +275,23 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		};
 		// adjust the latitude at which the azimuthal projection is used for polar areas,
 		// to make sure the wedge of the Albers conic projection is not visible on the map.
-		this.conf.polarUpperLat = ProjectionFactory.polarLatitudeLimitForAlbersConic(this.conf.topPt[1], mapScale, polarLowerLat, polarUpperLat);
+		this.conf.polarUpperLat = ProjectionFactory.polarLatitudeLimitForAlbersConic(this.conf.topPt[1], zoomFactor, polarLowerLat, polarUpperLat);
 
 		return ProjectionFactory.create(this.conf);
 	};
 
-	function extendRect(r, lon, lat) {
-		if (lon < r.west) {
-			r.west = lon;
+	function extendRect(rect, lon, lat) {
+		if (lon < rect.west) {
+			rect.west = lon;
 		}
-		if (lat < r.south) {
-			r.south = lat;
+		if (lat < rect.south) {
+			rect.south = lat;
 		}
-		if (lon > r.east) {
-			r.east = lon;
+		if (lon > rect.east) {
+			rect.east = lon;
 		}
-		if (lat > r.north) {
-			r.north = lat;
+		if (lat > rect.north) {
+			rect.north = lat;
 		}
 	}
 
@@ -332,7 +319,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 
 		southPoleVisible = isSouthPoleVisible(projection);
 		northPoleVisible = isNorthPoleVisible(projection);
-		
+
 		// if a pole is visible, the complete longitude range is visible on the map
 		if (northPoleVisible || southPoleVisible) {
 			bb.west = -Math.PI + mapCenter.lon0;
@@ -396,8 +383,8 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 
 		geometryBB.north = latCenter + percent * range;
 		geometryBB.south = latCenter - percent * range;
-		geometryBB.east *= (percent - 1)/2 + 1;
-		geometryBB.west *= (percent - 1)/2 + 1;
+		geometryBB.east *= (percent - 1) / 2 + 1;
+		geometryBB.west *= (percent - 1) / 2 + 1;
 
 		// clamp to valid range
 		if (geometryBB.west < -Math.PI) {
@@ -415,7 +402,8 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 
 		return geometryBB;
 	}
-	
+
+
 	this.render = function(fastRender) {
 		if (!Array.isArray(layers)) {
 			return;
@@ -425,7 +413,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		var bb = visibleGeographicBoundingBoxCenteredOnLon0(projection);
 
 		//Geometry projection is different then projection of the map. To create adaptive grid,
-		//right (geometry) bounding box needs to be defined and passed to the shaders. 
+		//right (geometry) bounding box needs to be defined and passed to the shaders.
 		//Geometry projections differs only in central latitude.
 		var poleLatitude = Math.PI / 2, geometryLat0 = 0;
 		//cloning projection configurations
@@ -435,8 +423,9 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		if ( typeof projection.getPoleLat !== 'undefined') {
 			poleLatitude = Math.PI - projection.getPoleLat();
 		}
-		geometryLat0 = geometryConf.lat0 + Math.PI / 2 - poleLatitude; //Computing geometry central latitude
-		
+		geometryLat0 = geometryConf.lat0 + Math.PI / 2 - poleLatitude;
+		//Computing geometry central latitude
+
 		//geometryLat0 is not in right quadrant for negative central latitudes
 		//Fixing geometryLat0 for intermediate latitudes (negative central latitude)
 		if (geometryLat0 > Math.PI / 2) {
@@ -446,17 +435,17 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		if (geometryLat0 < -Math.PI / 2) {
 			geometryLat0 = 2 * Math.PI - geometryLat0;
 		}
-		
+
 		//Assigning geometry central latitude to configurations
 		geometryConf.lat0 = geometryLat0;
-		
+
 		//Computing geometry bounding box
 		var geometryProjection = ProjectionFactory.create(geometryConf);
 		var geometryBB = visibleGeographicBoundingBoxCenteredOnLon0(geometryProjection);
 
-		//Due to different false northing values, it is more efficient to simply enlarged 
+		//Due to different false northing values, it is more efficient to simply enlarged
 		//geometry bounding box for 10%, in each direction 5%.
-		if (mapScale >= this.conf.scaleLimit2 && mapScale <= this.conf.scaleLimit5) {
+		if (zoomFactor >= this.conf.zoomLimit2 && zoomFactor <= this.conf.zoomLimit5) {
 			geometryBB = enlargeGeometryBoundingBox(geometryBB, 1.1);
 		}
 
@@ -465,7 +454,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		ctx.clearRect(0, 0, backgroundCanvas.width, backgroundCanvas.height);
 
 		var refScaleFactor = referenceScaleFactor();
-		var scale = refScaleFactor * ( zoomToMap ? mapScale : CONSTANT_SCALE);
+		var scale = refScaleFactor * ( debugZoomToMap ? zoomFactor : DEBUG_ZOOM_FACTOR);
 
 		var vectorContext = vectorCanvas.getContext('2d');
 		vectorContext.setTransform(1, 0, 0, 1, 0, 0);
@@ -485,7 +474,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 			layer.projection = projection;
 
 			layer.rotation = null;
-			if (projection instanceof TransformedProjection) {
+			if ( projection instanceof TransformedProjection) {
 				var poleLat = projection.getPoleLat();
 				if (poleLat !== Math.PI / 2) {
 					layer.rotation = new SphericalRotation(poleLat);
@@ -493,7 +482,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 			}
 
 			layer.mapScale = scale;
-			layer.relativeMapScale = mapScale;
+			layer.zoomFactor = zoomFactor;
 			layer.refScaleFactor = referenceScaleFactor();
 			layer.glScale = 2 * refScaleFactor / canvasHeight;
 			layer.mapCenter = mapCenter;
@@ -502,7 +491,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 			layer.map = this;
 			layer.canvasWidth = canvasWidth;
 			layer.canvasHeight = canvasHeight;
-			layer.render(fastRender, zoomToMap);
+			layer.render(fastRender, debugZoomToMap);
 
 			// restore drawing states
 			vectorContext.restore();
@@ -523,7 +512,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		ctx.shadowBlur = 3;
 
 		// mark the center of the map
-		if (drawOverlayCanvas) {
+		if (debugDrawOverlayCanvas) {
 			var l = 10;
 			ctx.beginPath();
 			ctx.moveTo(cx - l, cy);
@@ -534,7 +523,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		}
 
 		// mark standard parallels
-		if (drawOverlayCanvas && !isNaN(this.conf.lat1) && !isNaN(this.conf.lat2)) {
+		if (debugDrawOverlayCanvas && !isNaN(this.conf.lat1) && !isNaN(this.conf.lat2)) {
 			var pt = [];
 			ctx.beginPath();
 			projection.forward(0, this.conf.lat1, pt);
@@ -557,7 +546,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		// Draw the extension of the map if zooming is disabled.
 		// With zooming enabled, this would overpaint the frame drawn above.
 		// FIXME
-		if (!zoomToMap) {
+		if (!debugZoomToMap) {
 			ctx.shadowOffsetX = 1;
 			ctx.shadowOffsetY = 1;
 			ctx.shadowBlur = 1;
@@ -577,7 +566,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		}
 
 		// write size of the window
-		if (drawOverlayCanvas) {
+		if (debugDrawOverlayCanvas) {
 			var typeSize = 13;
 			var txt = canvasWidth + "\u2005\u00D7\u2005" + canvasHeight;
 			ctx.font = "normal normal " + typeSize + "px sans-serif";
@@ -614,12 +603,12 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 	// zoom in or out after mouse has been scrolled
 	// FIXME x and y are not used
 	this.zoomBy = function(s, x, y) {
-		mapScale /= s;
+		zoomFactor /= s;
 
-		if (mapScale > MAX_SCALE) {
-			mapScale = MAX_SCALE;
-		} else if (mapScale < MIN_SCALE) {
-			mapScale = MIN_SCALE;
+		if (zoomFactor > MAX_ZOOM_FACTOR) {
+			zoomFactor = MAX_ZOOM_FACTOR;
+		} else if (zoomFactor < MIN_ZOOM_FACTOR) {
+			zoomFactor = MIN_ZOOM_FACTOR;
 		}
 
 		map.render();
@@ -649,7 +638,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 					layer.canvas = vectorCanvas;
 				}
 				layer.projection = projection;
-				layer.mapScale = referenceScaleFactor() * mapScale;
+				layer.zoomFactor = zoomFactor;
 				layer.mapCenter = mapCenter;
 				try {
 					layer.load(map);
@@ -756,36 +745,36 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 	};
 
 	this.isZoomToMap = function() {
-		return zoomToMap;
+		return debugZoomToMap;
 	};
 
 	this.setZoomToMap = function(zoom) {
-		zoomToMap = zoom;
+		debugZoomToMap = zoom;
 		projectionChanged();
 	};
 
 	this.isDrawingOverlay = function() {
-		return drawOverlayCanvas;
+		return debugDrawOverlayCanvas;
 	};
 
 	this.setDrawOverlay = function(draw) {
-		drawOverlayCanvas = draw;
+		debugDrawOverlayCanvas = draw;
 	};
 
 	this.isRenderingWireframe = function() {
-		return renderWireframe;
+		return debugRenderWireframe;
 	};
 
 	this.setRenderWireframe = function(wireframe) {
-		renderWireframe = wireframe;
+		debugRenderWireframe = wireframe;
 	};
 
 	this.isAdaptiveResolutionGrid = function() {
-		return adaptiveResolutionGrid;
+		return debugAdaptiveResolutionGrid;
 	};
 
 	this.setAdaptiveResolutionGrid = function(adaptiveresolutiongrid) {
-		adaptiveResolutionGrid = adaptiveresolutiongrid;
+		debugAdaptiveResolutionGrid = adaptiveresolutiongrid;
 	};
 
 	this.isEquatorSnapping = function() {
