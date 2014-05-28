@@ -1,4 +1,4 @@
-/* Build Time: May 27, 2014 02:39:23 PM */
+/* Build Time: May 27, 2014 09:16:55 PM */
 /*globals LambertCylindricalEqualArea, ProjectionFactory */
 function MapEvents(map) {"use strict";
 
@@ -4102,7 +4102,7 @@ function VideoLayer(videoDOMElement) {"use strict";
 
 
     this.render = function() {
-        var uniforms;
+        var uniforms, adaptiveGridConf;
 
         // render() is calling itself in a rendering loop, and render() is also called when the projection changes.
         // To avoid multiple concurrent rendering loops, the current loop has to be stopped.
@@ -4119,11 +4119,17 @@ function VideoLayer(videoDOMElement) {"use strict";
         updateTexture();
 
         uniforms = this.projection.getShaderUniforms();
-        WebGL.draw(gl, this.mapScale / this.refScaleFactor * this.glScale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram);
-
+        adaptiveGridConf = {
+			useAdaptiveResolutionGrid : map.isAdaptiveResolutionGrid(),
+			geometryBBox : this.visibleGeometryBoundingBoxCenteredOnLon0,
+			mapScale : map.getZoomFactor(),
+			startScaleLimit : map.conf.zoomLimit2
+        };
+        WebGL.draw(gl, map.isRenderingWireframe(), this.mapScale / this.refScaleFactor * this.glScale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram, adaptiveGridConf);
         timer = window.requestAnimationFrame(function() {
             map.render(false);
         });
+       
     };
 
     this.clear = function() {
@@ -4146,7 +4152,7 @@ function VideoLayer(videoDOMElement) {"use strict";
         }
         shaderProgram = WebGL.loadShaderProgram(gl, 'shader/vs/forward.vert', 'shader/fs/forward.frag');
         texture = gl.createTexture();
-        sphereGeometry = WebGL.loadGeometry(gl);
+        sphereGeometry = WebGL.loadGeometry(gl, map.getGeometryResolution());
         if (videoDOMElement.paused) {
             videoDOMElement.play();
         }
@@ -8342,5 +8348,5 @@ ShpError.ERROR_UNDEFINED = 0;
 // a 'no data' error is thrown when the byte array runs out of data.
 ShpError.ERROR_NODATA = 1;
 
-var adaptiveCompositeMapBuildTimeStamp = "May 27, 2014 02:39:23 PM";
+var adaptiveCompositeMapBuildTimeStamp = "May 27, 2014 09:16:55 PM";
 		
