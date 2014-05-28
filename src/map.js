@@ -813,7 +813,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		if (Array.isArray(layers)) {
 			for ( i = 0, nLayers = layers.length; i < nLayers; i += 1) {
 				layer = layers[i];
-				if ( layer instanceof RasterLayer) {
+				if ( typeof layer.reloadGeometry === 'function') {
 					layer.reloadGeometry();
 				}
 			}

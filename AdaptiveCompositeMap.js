@@ -1,4 +1,4 @@
-/* Build Time: May 27, 2014 09:16:55 PM */
+/* Build Time: May 27, 2014 09:40:07 PM */
 /*globals LambertCylindricalEqualArea, ProjectionFactory */
 function MapEvents(map) {"use strict";
 
@@ -3982,10 +3982,6 @@ PolylineLayer.intermediateGreatCirclePoint = function(lon1, lat1, lon2, lat2, f,
 /*globals WebGL, Stats */
 
 function RasterLayer(url) {"use strict";
-
-    //RasterLayer.prototype = new AbstractLayer();
-    //AbstractLayer.call(this, null /*style*/, null /*scaleVisibility*/);
-
     var gl = null, map, texture, sphereGeometry, shaderProgram, stats;
     
 	//Measuring time
@@ -4041,10 +4037,6 @@ function RasterLayer(url) {"use strict";
         WebGL.enableAnisotropicFiltering(gl, texture);
     }
 
-    this.reloadGeometry = function(){
-        sphereGeometry = WebGL.loadGeometry(gl, map.getGeometryResolution());
-    };
-
     this.load = function(m) {
         map = m;
         gl = WebGL.init(this.canvas);
@@ -4055,6 +4047,10 @@ function RasterLayer(url) {"use strict";
         loadData(gl);
     };
 
+	this.reloadGeometry = function(){
+        sphereGeometry = WebGL.loadGeometry(gl, map.getGeometryResolution());
+    };
+    
     this.resize = function(w, h) {
         if (gl !== null) {
             // http://www.khronos.org/registry/webgl/specs/1.0/#2.3
@@ -4156,6 +4152,10 @@ function VideoLayer(videoDOMElement) {"use strict";
         if (videoDOMElement.paused) {
             videoDOMElement.play();
         }
+    };
+    
+    this.reloadGeometry = function(){
+        sphereGeometry = WebGL.loadGeometry(gl, map.getGeometryResolution());
     };
 
     this.resize = function(w, h) {
@@ -5218,7 +5218,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		if (Array.isArray(layers)) {
 			for ( i = 0, nLayers = layers.length; i < nLayers; i += 1) {
 				layer = layers[i];
-				if ( layer instanceof RasterLayer) {
+				if ( typeof layer.reloadGeometry === 'function') {
 					layer.reloadGeometry();
 				}
 			}
@@ -8348,5 +8348,5 @@ ShpError.ERROR_UNDEFINED = 0;
 // a 'no data' error is thrown when the byte array runs out of data.
 ShpError.ERROR_NODATA = 1;
 
-var adaptiveCompositeMapBuildTimeStamp = "May 27, 2014 09:16:55 PM";
+var adaptiveCompositeMapBuildTimeStamp = "May 27, 2014 09:40:07 PM";
 		

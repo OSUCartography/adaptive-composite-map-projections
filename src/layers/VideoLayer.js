@@ -83,6 +83,10 @@ function VideoLayer(videoDOMElement) {"use strict";
             videoDOMElement.play();
         }
     };
+    
+    this.reloadGeometry = function(){
+        sphereGeometry = WebGL.loadGeometry(gl, map.getGeometryResolution());
+    };
 
     this.resize = function(w, h) {
         if (gl !== null) {

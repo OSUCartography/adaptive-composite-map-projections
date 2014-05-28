@@ -1,10 +1,6 @@
 /*globals WebGL, Stats */
 
 function RasterLayer(url) {"use strict";
-
-    //RasterLayer.prototype = new AbstractLayer();
-    //AbstractLayer.call(this, null /*style*/, null /*scaleVisibility*/);
-
     var gl = null, map, texture, sphereGeometry, shaderProgram, stats;
     
 	//Measuring time
@@ -60,10 +56,6 @@ function RasterLayer(url) {"use strict";
         WebGL.enableAnisotropicFiltering(gl, texture);
     }
 
-    this.reloadGeometry = function(){
-        sphereGeometry = WebGL.loadGeometry(gl, map.getGeometryResolution());
-    };
-
     this.load = function(m) {
         map = m;
         gl = WebGL.init(this.canvas);
@@ -74,6 +66,10 @@ function RasterLayer(url) {"use strict";
         loadData(gl);
     };
 
+	this.reloadGeometry = function(){
+        sphereGeometry = WebGL.loadGeometry(gl, map.getGeometryResolution());
+    };
+    
     this.resize = function(w, h) {
         if (gl !== null) {
             // http://www.khronos.org/registry/webgl/specs/1.0/#2.3
