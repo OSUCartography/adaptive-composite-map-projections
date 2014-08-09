@@ -1,4 +1,4 @@
-/*globals RasterLayer, VideoLayer, resizeCanvasElement, clone, TransformedProjection, TransformedLambertAzimuthal, ProjectionFactory */
+/*globals RasterLayer, VideoLayer, resizeCanvasElement, clone, TransformedProjection, TransformedLambertAzimuthal, ProjectionFactory, Stats */
 
 // FIXME
 var MERCATOR_LIMIT_1, MERCATOR_LIMIT_2;
@@ -85,7 +85,14 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 	rotateSmallScales = true,
 	
 	// if true, the equator snaps to its standard horizontal aspect when dragging
-	snapEquator = true;
+	snapEquator = true,
+	
+	// for measuring FPS
+	stats =  new Stats();
+	//stats.setMode( 2 );
+	
+	// FIXME   
+	document.getElementById("FPS").appendChild( stats.domElement );
 
 	// FIXME should not be global
 	map = this;
@@ -408,6 +415,8 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		if (!Array.isArray(layers)) {
 			return;
 		}
+		
+		stats.begin();
 
 		var projection = this.updateProjection();
 		var bb = visibleGeographicBoundingBoxCenteredOnLon0(projection);
@@ -573,6 +582,8 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 			var metrics = ctx.measureText(txt);
 			ctx.fillText(txt, canvasWidth - metrics.width - typeSize, canvasHeight - typeSize * 0.5);
 		}
+		
+		stats.end();
 	};
 
 	this.resizeMap = function(w, h) {

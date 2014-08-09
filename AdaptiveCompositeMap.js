@@ -1,4 +1,4 @@
-/* Build Time: May 27, 2014 09:40:07 PM */
+/* Build Time: August 9, 2014 02:55:27 PM */
 /*globals LambertCylindricalEqualArea, ProjectionFactory */
 function MapEvents(map) {"use strict";
 
@@ -3982,15 +3982,8 @@ PolylineLayer.intermediateGreatCirclePoint = function(lon1, lat1, lon2, lat2, f,
 /*globals WebGL, Stats */
 
 function RasterLayer(url) {"use strict";
-    var gl = null, map, texture, sphereGeometry, shaderProgram, stats;
+    var gl = null, map, texture, sphereGeometry, shaderProgram;
     
-	//Measuring time
-	stats = new Stats();
-    //stats.setMode( 2 );
-
-	// FIXME   
-	document.getElementById("FPS").appendChild( stats.domElement );
-
     this.canvas = null;
     this.projection = null;
     this.mapScale = 1;
@@ -4014,9 +4007,7 @@ function RasterLayer(url) {"use strict";
 			startScaleLimit : map.conf.zoomLimit2
         };
         
-        stats.begin();
         WebGL.draw(gl, map.isRenderingWireframe(), this.mapScale / this.refScaleFactor * this.glScale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram, adaptiveGridConf);
-        stats.end();
     };
 
     this.clear = function() {
@@ -4490,7 +4481,14 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 	rotateSmallScales = true,
 	
 	// if true, the equator snaps to its standard horizontal aspect when dragging
-	snapEquator = true;
+	snapEquator = true,
+	
+	// for measuring FPS
+	stats =  new Stats();
+	//stats.setMode( 2 );
+	
+	// FIXME   
+	document.getElementById("FPS").appendChild( stats.domElement );
 
 	// FIXME should not be global
 	map = this;
@@ -4813,6 +4811,8 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		if (!Array.isArray(layers)) {
 			return;
 		}
+		
+		stats.begin();
 
 		var projection = this.updateProjection();
 		var bb = visibleGeographicBoundingBoxCenteredOnLon0(projection);
@@ -4978,6 +4978,8 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 			var metrics = ctx.measureText(txt);
 			ctx.fillText(txt, canvasWidth - metrics.width - typeSize, canvasHeight - typeSize * 0.5);
 		}
+		
+		stats.end();
 	};
 
 	this.resizeMap = function(w, h) {
@@ -8348,5 +8350,5 @@ ShpError.ERROR_UNDEFINED = 0;
 // a 'no data' error is thrown when the byte array runs out of data.
 ShpError.ERROR_NODATA = 1;
 
-var adaptiveCompositeMapBuildTimeStamp = "May 27, 2014 09:40:07 PM";
+var adaptiveCompositeMapBuildTimeStamp = "August 9, 2014 02:55:27 PM";
 		

@@ -1,15 +1,8 @@
-/*globals WebGL, Stats */
+/*globals WebGL */
 
 function RasterLayer(url) {"use strict";
-    var gl = null, map, texture, sphereGeometry, shaderProgram, stats;
+    var gl = null, map, texture, sphereGeometry, shaderProgram;
     
-	//Measuring time
-	stats = new Stats();
-    //stats.setMode( 2 );
-
-	// FIXME   
-	document.getElementById("FPS").appendChild( stats.domElement );
-
     this.canvas = null;
     this.projection = null;
     this.mapScale = 1;
@@ -19,23 +12,23 @@ function RasterLayer(url) {"use strict";
     };
 
     this.render = function() {
+		var uniforms, adaptiveGridConf;
+
         if (!texture.imageLoaded || gl === null) {
             return;
         }
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.uniform1i(gl.getUniformLocation(shaderProgram, "texture"), 0);
-        var uniforms = this.projection.getShaderUniforms();
-        var adaptiveGridConf = {
+        uniforms = this.projection.getShaderUniforms();
+        adaptiveGridConf = {
 			useAdaptiveResolutionGrid : map.isAdaptiveResolutionGrid(),
 			geometryBBox : this.visibleGeometryBoundingBoxCenteredOnLon0,
 			mapScale : map.getZoomFactor(),
 			startScaleLimit : map.conf.zoomLimit2
         };
         
-        stats.begin();
         WebGL.draw(gl, map.isRenderingWireframe(), this.mapScale / this.refScaleFactor * this.glScale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram, adaptiveGridConf);
-        stats.end();
     };
 
     this.clear = function() {
