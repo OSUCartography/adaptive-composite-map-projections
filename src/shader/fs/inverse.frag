@@ -9,18 +9,16 @@ precision mediump float;
 #define EPS 1e-7
 
 #define PI 3.14159265358979323846
-#define HALFPI (3.14159265358979323846 / 2.)
-#define M_1_PI 0.31830988618379067154
 #define WEB_MERCATOR_MAX_LAT 1.4844222297453322
 
 #define EPSG_MERCATOR 3857.
 #define EPSG_ROBINSON 54030.
 #define EPSG_GEOGRAPHIC 4979.
 #define EPSG_SINUSOIDAL 54008.
-#define EPSG_LAMBERT_CYLINDRICAL_TRANSVERSE -9834.
+#define LAMBERT_CYLINDRICAL_TRANSVERSE_ID -9834.
 
 #define ALBERS_ID 11.
-#define TRANSFORMED_WAGNER_ID 654267985.
+#define TRANSFORMED_LAMBERT_AZIMUTHAL_ID 654267985.
 #define NATURAL_EARTH_ID 7259365.
 #define CANTERS1_ID 53287562.
 #define CANTERS2_ID 38426587.
@@ -37,18 +35,12 @@ uniform float mix1ProjectionID;
 uniform float mix2ProjectionID;
 uniform float mixWeight;
 
-uniform  sampler2D texture;
-
-uniform vec2 scaleXY;
-uniform vec2 dXY;
-
 // spherical rotation
 uniform float sinLatPole;
 uniform float cosLatPole;
 
 // central meridian
 uniform float meridian;
-
 
 // vertical shift
 uniform float falseNorthing;
@@ -67,6 +59,15 @@ uniform float albersN;
 uniform float albersC;
 uniform float albersRho0;
 
+// ? FIXME
+uniform vec2 scaleXY;
+
+// ? FIXME
+uniform vec2 dXY;
+
+uniform  sampler2D texture;
+
+
 vec2 transformSphere(in vec2 lonLat) {
     vec2 sinLonLat = sin(lonLat);
 	vec2 cosLonLat = cos(lonLat);
@@ -80,14 +81,6 @@ vec2 transformSphere(in vec2 lonLat) {
 	// FIXME normalize
 	float lon = /*normalizeLam(*/atan(cosLat * sinLon, sinLatPole * cosLat_x_cosLon + cosLatPole * sinLat)/*)*/;
 	float lat = asin(sinLatPole * sinLat - cosLatPole * cosLat_x_cosLon);
-	
-	// shift longitude by central longitude
-    // FIXME
-    // causes flickering along +/-180deg
-	//lon = 2.0 * PI * (fract(0.5 * M_1_PI * (lon + meridian) + 0.5) - 0.5);
-    // causes vertical line beyond poles > normalize lon?
-    //lon += meridian;
-    
 	return vec2(lon, lat);
 }
 
@@ -251,7 +244,7 @@ vec2 project(in vec2 lonLat, in float projectionID) {
 	lat = lonLat.y;
 	
 	// world map projections
-	if (projectionID == TRANSFORMED_WAGNER_ID) {
+	if (projectionID == TRANSFORMED_LAMBERT_AZIMUTHAL_ID) {
 		return transformedWagner(lonLat);
 	} else if (projectionID == EPSG_ROBINSON) {
 		return robinson(lonLat);
@@ -443,7 +436,7 @@ vec2 invCylindricalEqualArea(in vec2 xy) {
 vec2 invProjection(in vec2 xy, in float projectionID) {
     
     // world map projections
-	if (projectionID == TRANSFORMED_WAGNER_ID) {
+	if (projectionID == TRANSFORMED_LAMBERT_AZIMUTHAL_ID) {
 		return invTransformedWagner(xy);
 	}
     if (projectionID == EPSG_ROBINSON) {
@@ -487,7 +480,7 @@ vec2 invProjection(in vec2 xy, in float projectionID) {
      if (projectionID == EPSG_MERCATOR) {
      return mercator(lon, lat);
      }
-     if (projectionID == EPSG_LAMBERT_CYLINDRICAL_TRANSVERSE) {
+     if (projectionID == LAMBERT_CYLINDRICAL_TRANSVERSE_ID) {
      return lambertCylindricalTransverse(lon, lat);
      }
      */

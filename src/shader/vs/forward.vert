@@ -1,12 +1,12 @@
 #define PI 3.14159265358979323846
-#define M_1_PI 0.31830988618379067154
 #define WEB_MERCATOR_MAX_LAT 1.4844222297453322
+#define M_1_PI 0.31830988618379067154
 
 #define EPSG_MERCATOR 3857.
 #define EPSG_ROBINSON 54030.
 #define EPSG_GEOGRAPHIC 4979.
 #define EPSG_SINUSOIDAL 54008.
-#define EPSG_LAMBERT_CYLINDRICAL_TRANSVERSE -9834.
+#define LAMBERT_CYLINDRICAL_TRANSVERSE_ID -9834.
 
 #define ALBERS_ID 11.
 #define LAMBERT_AZIMUTHAL_NORTH_POLAR_ID -2.
@@ -18,15 +18,6 @@
 #define CANTERS2_ID 38426587.
 #define CYLINDRICAL_EQUAL_AREA_ID -1.
 #define MIXPROJECTION -9999.0
-
-
-uniform mat4 modelViewProjMatrix;
-attribute vec2 vPosition;
-varying vec2 textureCoord;
-varying float alongAntimeridian;
-
-// hack: size of cell in radians
-uniform float antimeridianStripeCellSize;
 
 // ID of the current projection
 uniform float projectionID;
@@ -66,6 +57,18 @@ uniform vec2 geometryScale;
 
 // central latitude of geographic extent
 uniform float geometryCentralLat;
+
+uniform mat4 modelViewProjMatrix;
+
+// size of cell in radians
+uniform float antimeridianStripeCellSize;
+
+attribute vec2 vertexPosition;
+
+varying vec2 textureCoord;
+
+varying float alongAntimeridian;
+
 
 // spherical rotation
 vec2 transformSphere(in vec2 lonLat) {
@@ -279,7 +282,7 @@ vec2 project(in vec2 lonLat, in float projectionID) {
         return lambertAzimuthalSouthPolar(lonLat);
     } else if (projectionID == EPSG_MERCATOR) {
         return mercator(lonLat);
-	} else if (projectionID == EPSG_LAMBERT_CYLINDRICAL_TRANSVERSE) {
+	} else if (projectionID == LAMBERT_CYLINDRICAL_TRANSVERSE_ID) {
 		return lambertCylindricalTransverse(lonLat);
 	} else /* TRANSFORMED_LAMBERT_AZIMUTHAL_TRANSVERSE_ID */{
 		return transformedLambertAzimuthalTransverse(lonLat);
@@ -297,8 +300,8 @@ vec2 projectionMix(in vec2 lonLat) {
 
 void main(void) {
 	vec2 xy, lonLatTransformed;
-	//vec2 lonLat = radians(vPosition);
-    vec2 lonLat = vPosition * geometryScale + vec2(0, geometryCentralLat);
+	//vec2 lonLat = radians(vertexPosition);
+    vec2 lonLat = vertexPosition * geometryScale + vec2(0, geometryCentralLat);
     
     // FIXME a tentative solution for the transformation from Lambert azimuthal to Mercator for square format maps
     // first rotate geometry, then project
@@ -312,7 +315,7 @@ void main(void) {
 		xy = mix(merc, transWagner, mixWeight);
         
 		alongAntimeridian = 0.;
-		textureCoord = vPosition / vec2(360.0, 180.0) + 0.5;
+		textureCoord = vertexPosition / vec2(360.0, 180.0) + 0.5;
 	} else {
 		lonLatTransformed = transformSphere(lonLat);
         

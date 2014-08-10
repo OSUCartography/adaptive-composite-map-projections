@@ -1,4 +1,4 @@
-/* Build Time: August 9, 2014 06:31:20 PM */
+/* Build Time: August 9, 2014 11:53:53 PM */
 /*globals LambertCylindricalEqualArea, ProjectionFactory */
 function MapEvents(map) {"use strict";
 
@@ -1218,9 +1218,9 @@ WebGL.setDefaultUniforms = function(gl, program) {"use strict";
     gl.uniform1f(gl.getUniformLocation(program, 'wagnerCA'), 0);
     gl.uniform1f(gl.getUniformLocation(program, 'wagnerCB'), 0);
 
-    gl.uniform1f(gl.getUniformLocation(program, 'n'), 0);
-    gl.uniform1f(gl.getUniformLocation(program, 'c'), 0);
-    gl.uniform1f(gl.getUniformLocation(program, 'rho0'), 0);
+    gl.uniform1f(gl.getUniformLocation(program, 'albersN'), 0);
+    gl.uniform1f(gl.getUniformLocation(program, 'albersC'), 0);
+    gl.uniform1f(gl.getUniformLocation(program, 'albersRho0'), 0);
     
     gl.uniform1i(gl.getUniformLocation(program, 'flagStrips'), 0); 
 
@@ -1233,11 +1233,11 @@ WebGL.setUniforms = function(gl, program, scale, lon0, uniforms, canvas, adaptiv
     var viewTransform, xScale, yScale, i, geometryBBox;
     // set default uniform values that are needed, e.g. rotation on sphere
     WebGL.setDefaultUniforms(gl, program);
-    gl.enableVertexAttribArray(gl.getAttribLocation(program, 'vPosition'));
+    gl.enableVertexAttribArray(gl.getAttribLocation(program, 'vertexPosition'));
 
     gl.uniform1f(gl.getUniformLocation(program, 'meridian'), lon0);
 
-    if (typeof adaptiveGridConf !== 'undefined' && adaptiveGridConf.useAdaptiveResolutionGrid && adaptiveGridConf.mapScale > adaptiveGridConf.startScaleLimit){
+    if (adaptiveGridConf.useAdaptiveResolutionGrid && adaptiveGridConf.mapScale > adaptiveGridConf.startScaleLimit){
 		geometryBBox = adaptiveGridConf.geometryBBox;
         gl.uniform1f(gl.getUniformLocation(program, 'geometryCentralLat'), (geometryBBox.north + geometryBBox.south) / 2);
         xScale = Math.abs(geometryBBox.east - geometryBBox.west) / 2;
@@ -1250,7 +1250,7 @@ WebGL.setUniforms = function(gl, program, scale, lon0, uniforms, canvas, adaptiv
     viewTransform.scale(canvas.height / canvas.width * scale, scale, 1, 1);
     gl.uniformMatrix4fv(gl.getUniformLocation(program, 'modelViewProjMatrix'), false, viewTransform.getAsFloat32Array());
 
-    // uniforms for projection
+    // uniforms for projections
     for (i in uniforms) {
         if (uniforms.hasOwnProperty(i)) {
             if (Array.isArray(uniforms[i])) {
@@ -1265,8 +1265,11 @@ WebGL.setUniforms = function(gl, program, scale, lon0, uniforms, canvas, adaptiv
     gl.uniform2f(gl.getUniformLocation(program, 'dXY'), canvas.width / 2, canvas.height / 2);
 };
 
-WebGL.loadGeometry = function(gl, resolution) {"use strict";
-    var vertices, b, x, y, xIdx, yIdx, startY, stepY, idxCount, vbo, cellSize, geometryStrip = {};
+/**
+ * loads a tesselated sphere
+ */
+WebGL.loadSphereGeometry = function(gl, resolution) {"use strict";
+    var vertices, b, x, y, xIdx, yIdx, startY, stepY, idxCount, buffer, cellSize, geometry = {};
 
     cellSize = 2 / resolution;
     b = {        
@@ -1304,32 +1307,36 @@ WebGL.loadGeometry = function(gl, resolution) {"use strict";
         }
     }
 
-    vbo = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+    buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
     
-    geometryStrip.buffer = vbo;
-    geometryStrip.vertexCount = vertices.length / 2;
-    geometryStrip.cellSize = cellSize;
+    geometry.buffer = buffer;
+    geometry.vertexCount = vertices.length / 2;
+    geometry.cellSize = cellSize;
 
-    return geometryStrip;
+    return geometry;
 };
 
-WebGL.loadInverseProjectionGeometry = function(gl) {"use strict";
-    var vertices, triangleVertexPositionBuffer;
+/**
+ * loads a 2D rectangle covering the entire viewport
+ */
+WebGL.loadRectangleGeometry = function(gl) {"use strict";
+    var vertices, buffer, geometry = {};
 
-    triangleVertexPositionBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
-    // FIXME make 2D
-    vertices = [-1, -1, 0, +1, -1, 0, +1, +1, 0, +1, +1, 0, -1, +1, 0, -1, -1, 0];
+    buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    vertices = [-1, -1, +1, -1, +1, +1, +1, +1, -1, +1, -1, -1];
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-    triangleVertexPositionBuffer.itemSize = 3;
-    triangleVertexPositionBuffer.numberOfItems = 6;
-    return triangleVertexPositionBuffer;
+    
+    geometry.buffer = buffer;
+    geometry.itemSize = 2; // FIXME not used
+    geometry.vertexCount = 6;
+    return geometry;
 };
 
-WebGL.deleteGeometry = function(gl, geometryStrip) {"use strict";
-    gl.deleteBuffer(geometryStrip.buffer);
+WebGL.deleteGeometry = function(gl, geometry) {"use strict";
+    gl.deleteBuffer(geometry.buffer);
 };
 
 // Scale up a texture image to the next higher power of two dimension.
@@ -1416,41 +1423,34 @@ WebGL.clear = function(gl) {"use strict";
     gl.clear(gl.COLOR_BUFFER_BIT);
 };
 
-WebGL.draw = function(gl, drawWireframe, scale, lon0, uniforms, canvas, geometryStrip, shaderProgram, adaptiveGridConf) {"use strict";
-    var vPositionIdx, drawMode = gl.TRIANGLE_STRIP;
-
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    
-    //FIXME hack 
-    gl.useProgram(shaderProgram);
-    
-    WebGL.setUniforms(gl, shaderProgram, scale, lon0, uniforms, canvas, adaptiveGridConf);
-    
-    gl.uniform1f(gl.getUniformLocation(shaderProgram, "antimeridianStripeCellSize"), geometryStrip.cellSize*Math.PI);
-    
-    vPositionIdx = gl.getAttribLocation(shaderProgram, 'vPosition');
-    gl.bindBuffer(gl.ARRAY_BUFFER, geometryStrip.buffer);
-    gl.vertexAttribPointer(vPositionIdx, 2, gl.FLOAT, false, 0, 0);
-    if(drawWireframe){
-        drawMode = gl.LINE_STRIP;
-    }
-    gl.drawArrays(drawMode, 0, geometryStrip.vertexCount);
-};
-
-WebGL.drawInverseProjection = function(gl, scale, lon0, uniforms, canvas, geometryStrips, shaderProgram) {"use strict";
+WebGL.draw = function(gl, drawMode, scale, lon0, uniforms, canvas, geometry, shaderProgram, adaptiveGridConf) {"use strict";
     var vertexPositionAttribute;
 
     gl.clear(gl.COLOR_BUFFER_BIT);
-
     gl.useProgram(shaderProgram);
+    WebGL.setUniforms(gl, shaderProgram, scale, lon0, uniforms, canvas, adaptiveGridConf);
+    
+    gl.uniform1f(gl.getUniformLocation(shaderProgram, "antimeridianStripeCellSize"), geometry.cellSize*Math.PI);
 
-    WebGL.setUniforms(gl, shaderProgram, scale, lon0, uniforms, canvas);
-    vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "vertexPosition");
+    gl.bindBuffer(gl.ARRAY_BUFFER, geometry.buffer);
+    vertexPositionAttribute = gl.getAttribLocation(shaderProgram, 'vertexPosition');
+    gl.vertexAttribPointer(vertexPositionAttribute, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vertexPositionAttribute);
+    gl.drawArrays(drawMode, 0, geometry.vertexCount);
+};
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, geometryStrips);
-    gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
+WebGL.drawInverseProjection = function(gl, drawMode, scale, lon0, uniforms, canvas, geometry, shaderProgram) {"use strict";
+    var vertexPositionAttribute;
+
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.useProgram(shaderProgram);
+    WebGL.setUniforms(gl, shaderProgram, scale, lon0, uniforms, canvas);
+    
+    gl.bindBuffer(gl.ARRAY_BUFFER, geometry.buffer);
+    vertexPositionAttribute = gl.getAttribLocation(shaderProgram, 'vertexPosition');
+    gl.vertexAttribPointer(vertexPositionAttribute, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vertexPositionAttribute);
+    gl.drawArrays(drawMode, 0, geometry.vertexCount);
 };
 //
 // stateful helper for binaryajax.js's BinaryFile class
@@ -4009,141 +4009,102 @@ PolylineLayer.intermediateGreatCirclePoint = function(lon1, lat1, lon2, lat2, f,
 }; 
 /*globals WebGL */
 
-function RasterLayerForwardProjection(url) {"use strict";
-    var gl = null, map, texture, sphereGeometry, shaderProgram;
-    
-    this.canvas = null;
-    this.projection = null;
-    this.mapScale = 1;
-    this.mapCenter = {
-        lon0 : 0,
-        lat0 : 0
-    };
+function RasterLayer(url) {
+	"use strict";
+	var gl = null, map, texture, geometry, shaderProgram;
 
-    this.render = function() {
-		var uniforms, adaptiveGridConf;
+	this.canvas = null;
+	this.projection = null;
+	this.mapScale = 1;
+	this.mapCenter = {
+		lon0 : 0,
+		lat0 : 0
+	};
 
-        if (!texture.imageLoaded || gl === null) {
-            return;
-        }
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.uniform1i(gl.getUniformLocation(shaderProgram, "texture"), 0);
-        uniforms = this.projection.getShaderUniforms();
-        adaptiveGridConf = {
+	this.render = function() {
+		var drawMode, uniforms, scale, adaptiveGridConf;
+
+		if (!texture.imageLoaded || gl === null) {
+			return;
+		}
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, texture);
+		gl.uniform1i(gl.getUniformLocation(shaderProgram, "texture"), 0);
+		uniforms = this.projection.getShaderUniforms();
+		adaptiveGridConf = {
 			useAdaptiveResolutionGrid : map.isAdaptiveResolutionGrid(),
 			geometryBBox : this.visibleGeometryBoundingBoxCenteredOnLon0,
 			mapScale : map.getZoomFactor(),
 			startScaleLimit : map.conf.zoomLimit2
-        };
-        
-        WebGL.draw(gl, map.isRenderingWireframe(), this.mapScale / this.refScaleFactor * this.glScale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram, adaptiveGridConf);
-    };
+		};
+		scale = this.mapScale / this.refScaleFactor * this.glScale;
+		if (map.isForwardRasterProjection()) {
+			drawMode = map.isRenderingWireframe() ? gl.LINE_STRIP : gl.TRIANGLE_STRIP;
+		} else {
+			drawMode = map.isRenderingWireframe() ? gl.LINE_STRIP : gl.TRIANGLES;
+		}
+		WebGL.draw(gl, drawMode, scale, this.mapCenter.lon0, uniforms, this.canvas, geometry, shaderProgram, adaptiveGridConf);
+	};
 
-    this.clear = function() {
-        if (gl !== null) {
-            WebGL.clear(gl);
-            gl.deleteTexture(texture);
-            gl.deleteProgram(shaderProgram);
-            WebGL.deleteGeometry(gl, sphereGeometry);
-        }
-    };
+	this.clear = function() {
+		if (gl !== null) {
+			WebGL.clear(gl);
+			gl.deleteTexture(texture);
+			gl.deleteProgram(shaderProgram);
+			WebGL.deleteGeometry(gl, geometry);
+		}
+	};
 
-    function loadData(gl) {
-        gl.clearColor(0, 0, 0, 0);
-        shaderProgram = WebGL.loadShaderProgram(gl, 'shader/vs/forward.vert', 'shader/fs/forward.frag');
-        texture = gl.createTexture();
-        sphereGeometry = WebGL.loadGeometry(gl, map.getGeometryResolution());
-        WebGL.loadStaticTexture(gl, url, map, texture);
-        WebGL.enableAnisotropicFiltering(gl, texture);
-    }
+	function loadData(gl) {
+		var vertexShaderName, fragmentShaderName;
+		
+		gl.clearColor(0, 0, 0, 0);
+		if (map.isForwardRasterProjection()) {
+			vertexShaderName = 'shader/vs/forward.vert';
+			fragmentShaderName = 'shader/fs/forward.frag';
+		} else {
+			vertexShaderName = 'shader/vs/inverse.vert';
+			fragmentShaderName = 'shader/fs/inverse.frag';
+		}
+		shaderProgram = WebGL.loadShaderProgram(gl, vertexShaderName, fragmentShaderName);
+		texture = gl.createTexture();
+		if (map.isForwardRasterProjection()) {
+			geometry = WebGL.loadSphereGeometry(gl, map.getGeometryResolution());
+		} else {
+			geometry = WebGL.loadRectangleGeometry(gl);
+		}
+		WebGL.loadStaticTexture(gl, url, map, texture);
+		WebGL.enableAnisotropicFiltering(gl, texture);
+	}
 
-    this.load = function(m) {
-        map = m;
-        gl = WebGL.init(this.canvas);
-        if (gl === null) {
-            throw new Error("WebGL is not available. Firefox or Chrome is required.");
-        }
-        WebGL.addContextLostAndRestoredHandler(this.canvas, loadData);
-        loadData(gl);
-    };
 
-	this.reloadGeometry = function(){
-        sphereGeometry = WebGL.loadGeometry(gl, map.getGeometryResolution());
-    };
-    
-    this.resize = function(w, h) {
-        if (gl !== null) {
-            // http://www.khronos.org/registry/webgl/specs/1.0/#2.3
-            gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-        }
-    };
-}
-/*globals WebGL */
+	this.load = function(m) {
+		map = m;
+		gl = WebGL.init(this.canvas);
+		if (gl === null) {
+			throw new Error("WebGL is not available. Firefox or Chrome is required.");
+		}
+		WebGL.addContextLostAndRestoredHandler(this.canvas, loadData);
+		loadData(gl);
+	};
 
-function RasterLayerInverseProjection(url) {"use strict";
-    var gl = null, map, texture, sphereGeometry, shaderProgram;
-    
-    this.canvas = null;
-    this.projection = null;
-    this.mapScale = 1;
-    this.mapCenter = {
-        lon0 : 0,
-        lat0 : 0
-    };
+	this.adjustTesselationDensity = function() {
+		if (map.isForwardRasterProjection()) {
+			geometry = WebGL.loadSphereGeometry(gl, map.getGeometryResolution());
+		}
+	};
+	
+	this.reloadGeometry = function() {
+		this.clear();
+		loadData(gl);
+	};
 
-    this.render = function() {
-		var uniforms, scale;
-
-        if (!texture.imageLoaded || gl === null) {
-            return;
-        }
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.uniform1i(gl.getUniformLocation(shaderProgram, "texture"), 0);
-        uniforms = this.projection.getShaderUniforms();
-        scale = this.mapScale / this.refScaleFactor * this.glScale;
-        WebGL.drawInverseProjection(gl, scale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram);       
-    };
-
-    this.clear = function() {
-        if (gl !== null) {
-            WebGL.clear(gl);
-            gl.deleteTexture(texture);
-            gl.deleteProgram(shaderProgram);
-            WebGL.deleteGeometry(gl, sphereGeometry);
-        }
-    };
-
-    function loadData(gl) {
-        gl.clearColor(0, 0, 0, 0);
-        shaderProgram = WebGL.loadShaderProgram(gl, 'shader/vs/inverse.vert', 'shader/fs/inverse.frag');
-        texture = gl.createTexture();
-        sphereGeometry = WebGL.loadInverseProjectionGeometry(gl);
-        WebGL.loadStaticTexture(gl, url, map, texture);
-        WebGL.enableAnisotropicFiltering(gl, texture);
-    }
-
-    this.load = function(m) {
-        map = m;
-        gl = WebGL.init(this.canvas);
-        if (gl === null) {
-            throw new Error("WebGL is not available. Firefox or Chrome is required.");
-        }
-        WebGL.addContextLostAndRestoredHandler(this.canvas, loadData);
-        loadData(gl);
-    };
-
-	this.reloadGeometry = function(){
-        sphereGeometry = WebGL.loadInverseProjectionGeometry(gl);
-    };
-    
-    this.resize = function(w, h) {
-        if (gl !== null) {
-            // http://www.khronos.org/registry/webgl/specs/1.0/#2.3
-            gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-        }
-    };
+	this.resize = function(w, h) {
+		if (gl !== null) {
+			// http://www.khronos.org/registry/webgl/specs/1.0/#2.3
+			gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+		}
+	};
 }
 /**
  * Tropics is a map layer drawing the two tropics circles (parallels at 23.4378 deg north and south)
@@ -4158,7 +4119,7 @@ function Tropics(style, scaleVisibility) {"use strict";
 /*globals WebGL */
 function VideoLayer(videoDOMElement) {"use strict";
 
-    var gl = null, map, shaderProgram, sphereGeometry = [], texture = null, timer;
+    var gl = null, map, shaderProgram, geometry = [], texture = null, timer;
     this.canvas = null;
     this.projection = null;
     this.mapScale = 1;
@@ -4185,7 +4146,7 @@ function VideoLayer(videoDOMElement) {"use strict";
 
 
     this.render = function() {
-        var uniforms, adaptiveGridConf;
+        var uniforms, scale, adaptiveGridConf;
 
         // render() is calling itself in a rendering loop, and render() is also called when the projection changes.
         // To avoid multiple concurrent rendering loops, the current loop has to be stopped.
@@ -4208,7 +4169,8 @@ function VideoLayer(videoDOMElement) {"use strict";
 			mapScale : map.getZoomFactor(),
 			startScaleLimit : map.conf.zoomLimit2
         };
-        WebGL.draw(gl, map.isRenderingWireframe(), this.mapScale / this.refScaleFactor * this.glScale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram, adaptiveGridConf);
+        scale = this.mapScale / this.refScaleFactor * this.glScale;
+        WebGL.draw(gl, gl.TRIANGLE_STRIP, scale, this.mapCenter.lon0, uniforms, this.canvas, geometry, shaderProgram, adaptiveGridConf);
         timer = window.requestAnimationFrame(function() {
             map.render(false);
         });
@@ -4222,7 +4184,7 @@ function VideoLayer(videoDOMElement) {"use strict";
             WebGL.clear(gl);
             gl.deleteTexture(texture);
             gl.deleteProgram(shaderProgram);
-            WebGL.deleteGeometry(gl, sphereGeometry);
+            WebGL.deleteGeometry(gl, geometry);
         }
         videoDOMElement.pause();
     };
@@ -4235,14 +4197,14 @@ function VideoLayer(videoDOMElement) {"use strict";
         }
         shaderProgram = WebGL.loadShaderProgram(gl, 'shader/vs/forward.vert', 'shader/fs/forward.frag');
         texture = gl.createTexture();
-        sphereGeometry = WebGL.loadGeometry(gl, map.getGeometryResolution());
+        geometry = WebGL.loadSphereGeometry(gl, map.getGeometryResolution());
         if (videoDOMElement.paused) {
             videoDOMElement.play();
         }
     };
     
     this.reloadGeometry = function(){
-        sphereGeometry = WebGL.loadGeometry(gl, map.getGeometryResolution());
+        geometry = WebGL.loadSphereGeometry(gl, map.getGeometryResolution());
     };
 
     this.resize = function(w, h) {
@@ -4490,7 +4452,7 @@ document.write(
 	+ "End Function\r\n"
 	+ "</script>\r\n"
 );
-/*globals RasterLayerForwardProjection, RasterLayerInverseProjection, VideoLayer, resizeCanvasElement, clone, TransformedProjection, TransformedLambertAzimuthal, ProjectionFactory, Stats */
+/*globals RasterLayer, VideoLayer, resizeCanvasElement, clone, TransformedProjection, TransformedLambertAzimuthal, ProjectionFactory, Stats */
 
 // FIXME
 var MERCATOR_LIMIT_1, MERCATOR_LIMIT_2;
@@ -4503,7 +4465,8 @@ var CONIC_STD_PARALLELS_FRACTION = 1 / 6;
 // is considered to be square.
 var formatRatioLimit = 0.8;
 
-function mouseToCanvasCoordinates(e, parent) {"use strict";
+function mouseToCanvasCoordinates(e, parent) {
+	"use strict";
 	// FIXME there should be a better way for this
 	var node, x = e.clientX, y = e.clientY;
 
@@ -4522,7 +4485,8 @@ function mouseToCanvasCoordinates(e, parent) {"use strict";
 	};
 }
 
-function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChangeListener) {"use strict";
+function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChangeListener) {
+	"use strict";
 
 	// zoom factor limits where projections change
 	var zoomLimit1 = 1.5, zoomLimit2 = 2, zoomLimit3 = 3, zoomLimit4 = 4, zoomLimit5 = 6,
@@ -4541,16 +4505,19 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 
 	// if true, the center of the map and the position of standard parallels are drawn
 	debugDrawOverlayCanvas = false,
-	
+
 	// if true, the map adjusts its scale
 	debugZoomToMap = true,
-	
+
 	// if true, a wireframe is rendered for raster layers
 	debugRenderWireframe = false,
-	
+
 	// if true, the position and extent of the geometry for raster layer are adjusted
 	debugAdaptiveResolutionGrid = true,
-	
+
+	// if true, raster images are projected with forward transformation, otherwise with an inverse transformation
+	debugForwardRasterProjection = true,
+
 	// Latitude limit between clyindrical and conic projection at large scales
 	// Use cylindrical projection between the equator and cylindricalLowerLat
 	cylindricalLowerLat = 15 * Math.PI / 180,
@@ -4561,7 +4528,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 	polarUpperLat = 75 * Math.PI / 180,
 	// use transition between polarLowerLat and polarUpperLat
 	polarLowerLat = 60 * Math.PI / 180,
-	
+
 	// longitude and latitude of the map center in radians
 	mapCenter = {
 		lon0 : 0,
@@ -4569,52 +4536,48 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 	},
 
 	// resolution of geometry for raster layer
-	geometryResolution = 500,
+	geometryResolution = 500, smallScaleMapProjectionName = "Hammer",
 
-	smallScaleMapProjectionName = "Hammer",
-	
 	// if true, oblique world projections can be created
 	rotateSmallScales = true,
-	
+
 	// if true, the equator snaps to its standard horizontal aspect when dragging
 	snapEquator = true,
-	
+
 	// for measuring FPS
-	stats =  new Stats();
+	stats = new Stats();
 	//stats.setMode( 2 );
-	
-	// FIXME   
-	document.getElementById("FPS").appendChild( stats.domElement );
+
+	// FIXME
+	document.getElementById("FPS").appendChild(stats.domElement);
 
 	// FIXME should not be global
 	map = this;
-	
-	var MERCATOR_TRANSITION_WIDTH = 0.75;
-	
-	(function setupMercator() {
-		// FIXME: MERCATOR_LIMIT_1 and MERCATOR_LIMIT_2 are not valid when
-		// the small scale projection changes, as they are relative to the small-scale graticule height !?
-	 
-		var mercatorMapSize, smallScaleProjection, graticuleHeight, sf;
-		
-		// size of web mercator in pixels at web map scale where the transition to
-		// the web mercator projection occurs
-		mercatorMapSize = Math.pow(2, 8 + MERCATOR_LIMIT_WEB_MAP_SCALE);
 
-		// height of the adaptive map in coordinates projected with the unary sphere
-		smallScaleProjection = ProjectionFactory.getSmallScaleProjection(smallScaleMapProjectionName);
-		graticuleHeight = 2 * ProjectionFactory.halfCentralMeridianLengthOfSmallScaleProjection(smallScaleProjection);
+	var MERCATOR_TRANSITION_WIDTH = 0.75; ( function setupMercator() {
+			// FIXME: MERCATOR_LIMIT_1 and MERCATOR_LIMIT_2 are not valid when
+			// the small scale projection changes, as they are relative to the small-scale graticule height !?
 
-		// scale factor to fill the canvas with the projected map
-		sf = canvasHeight / graticuleHeight;
+			var mercatorMapSize, smallScaleProjection, graticuleHeight, sf;
 
-		// scale factor where the web mercator is used
-		MERCATOR_LIMIT_2 = mercatorMapSize / (Math.PI * 2 * sf);
+			// size of web mercator in pixels at web map scale where the transition to
+			// the web mercator projection occurs
+			mercatorMapSize = Math.pow(2, 8 + MERCATOR_LIMIT_WEB_MAP_SCALE);
 
-		// scale factor where the transition towards the web mercator starts
-		MERCATOR_LIMIT_1 = MERCATOR_LIMIT_2 - MERCATOR_TRANSITION_WIDTH;
-	}());
-	
+			// height of the adaptive map in coordinates projected with the unary sphere
+			smallScaleProjection = ProjectionFactory.getSmallScaleProjection(smallScaleMapProjectionName);
+			graticuleHeight = 2 * ProjectionFactory.halfCentralMeridianLengthOfSmallScaleProjection(smallScaleProjection);
+
+			// scale factor to fill the canvas with the projected map
+			sf = canvasHeight / graticuleHeight;
+
+			// scale factor where the web mercator is used
+			MERCATOR_LIMIT_2 = mercatorMapSize / (Math.PI * 2 * sf);
+
+			// scale factor where the transition towards the web mercator starts
+			MERCATOR_LIMIT_1 = MERCATOR_LIMIT_2 - MERCATOR_TRANSITION_WIDTH;
+		}());
+
 	function projectionChanged() {
 		map.updateProjection();
 		projectionChangeListener(map);
@@ -4907,7 +4870,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		if (!Array.isArray(layers)) {
 			return;
 		}
-		
+
 		stats.begin();
 
 		var projection = this.updateProjection();
@@ -5074,7 +5037,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 			var metrics = ctx.measureText(txt);
 			ctx.fillText(txt, canvasWidth - metrics.width - typeSize, canvasHeight - typeSize * 0.5);
 		}
-		
+
 		stats.end();
 	};
 
@@ -5135,9 +5098,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		if (Array.isArray(layers)) {
 			for ( i = 0, nLayers = layers.length; i < nLayers; i += 1) {
 				layer = layers[i];
-				if ( layer instanceof RasterLayerForwardProjection 
-					|| layer instanceof RasterLayerInverseProjection
-					|| layer instanceof VideoLayer) {
+				if ( layer instanceof RasterLayer || layer instanceof VideoLayer) {
 					layer.canvas = rasterCanvas;
 				} else {
 					layer.canvas = vectorCanvas;
@@ -5282,6 +5243,14 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		debugAdaptiveResolutionGrid = adaptiveresolutiongrid;
 	};
 
+	this.isForwardRasterProjection = function() {
+		return debugForwardRasterProjection;
+	};
+
+	this.setForwardRasterProjection = function(forwardRasterProjection) {
+		debugForwardRasterProjection = forwardRasterProjection;
+	};
+
 	this.isEquatorSnapping = function() {
 		return snapEquator;
 	};
@@ -5313,8 +5282,22 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 
 	this.setGeometryResolution = function(resolution) {
 		var layer, nLayers, i;
+		
 		geometryResolution = resolution;
+		
+		if (Array.isArray(layers)) {
+			for ( i = 0, nLayers = layers.length; i < nLayers; i += 1) {
+				layer = layers[i];
+				if ( typeof layer.adjustTesselationDensity === 'function') {
+					layer.adjustTesselationDensity();
+				}
+			}
+		}
+		this.render();
+	};
 
+	this.reloadGeometry = function() {
+		var layer, nLayers, i;
 		if (Array.isArray(layers)) {
 			for ( i = 0, nLayers = layers.length; i < nLayers; i += 1) {
 				layer = layers[i];
@@ -5323,8 +5306,6 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 				}
 			}
 		}
-
-		this.render();
 	};
 }
 /*globals formatLatitude*/
@@ -8448,5 +8429,5 @@ ShpError.ERROR_UNDEFINED = 0;
 // a 'no data' error is thrown when the byte array runs out of data.
 ShpError.ERROR_NODATA = 1;
 
-var adaptiveCompositeMapBuildTimeStamp = "August 9, 2014 06:31:20 PM";
+var adaptiveCompositeMapBuildTimeStamp = "August 9, 2014 11:53:53 PM";
 		

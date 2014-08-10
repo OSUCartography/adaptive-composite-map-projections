@@ -1,4 +1,4 @@
-/*globals RasterLayerForwardProjection, RasterLayerInverseProjection, VideoLayer, resizeCanvasElement, clone, TransformedProjection, TransformedLambertAzimuthal, ProjectionFactory, Stats */
+/*globals RasterLayer, VideoLayer, resizeCanvasElement, clone, TransformedProjection, TransformedLambertAzimuthal, ProjectionFactory, Stats */
 
 // FIXME
 var MERCATOR_LIMIT_1, MERCATOR_LIMIT_2;
@@ -11,7 +11,8 @@ var CONIC_STD_PARALLELS_FRACTION = 1 / 6;
 // is considered to be square.
 var formatRatioLimit = 0.8;
 
-function mouseToCanvasCoordinates(e, parent) {"use strict";
+function mouseToCanvasCoordinates(e, parent) {
+	"use strict";
 	// FIXME there should be a better way for this
 	var node, x = e.clientX, y = e.clientY;
 
@@ -30,7 +31,8 @@ function mouseToCanvasCoordinates(e, parent) {"use strict";
 	};
 }
 
-function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChangeListener) {"use strict";
+function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChangeListener) {
+	"use strict";
 
 	// zoom factor limits where projections change
 	var zoomLimit1 = 1.5, zoomLimit2 = 2, zoomLimit3 = 3, zoomLimit4 = 4, zoomLimit5 = 6,
@@ -49,16 +51,19 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 
 	// if true, the center of the map and the position of standard parallels are drawn
 	debugDrawOverlayCanvas = false,
-	
+
 	// if true, the map adjusts its scale
 	debugZoomToMap = true,
-	
+
 	// if true, a wireframe is rendered for raster layers
 	debugRenderWireframe = false,
-	
+
 	// if true, the position and extent of the geometry for raster layer are adjusted
 	debugAdaptiveResolutionGrid = true,
-	
+
+	// if true, raster images are projected with forward transformation, otherwise with an inverse transformation
+	debugForwardRasterProjection = true,
+
 	// Latitude limit between clyindrical and conic projection at large scales
 	// Use cylindrical projection between the equator and cylindricalLowerLat
 	cylindricalLowerLat = 15 * Math.PI / 180,
@@ -69,7 +74,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 	polarUpperLat = 75 * Math.PI / 180,
 	// use transition between polarLowerLat and polarUpperLat
 	polarLowerLat = 60 * Math.PI / 180,
-	
+
 	// longitude and latitude of the map center in radians
 	mapCenter = {
 		lon0 : 0,
@@ -77,52 +82,48 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 	},
 
 	// resolution of geometry for raster layer
-	geometryResolution = 500,
+	geometryResolution = 500, smallScaleMapProjectionName = "Hammer",
 
-	smallScaleMapProjectionName = "Hammer",
-	
 	// if true, oblique world projections can be created
 	rotateSmallScales = true,
-	
+
 	// if true, the equator snaps to its standard horizontal aspect when dragging
 	snapEquator = true,
-	
+
 	// for measuring FPS
-	stats =  new Stats();
+	stats = new Stats();
 	//stats.setMode( 2 );
-	
-	// FIXME   
-	document.getElementById("FPS").appendChild( stats.domElement );
+
+	// FIXME
+	document.getElementById("FPS").appendChild(stats.domElement);
 
 	// FIXME should not be global
 	map = this;
-	
-	var MERCATOR_TRANSITION_WIDTH = 0.75;
-	
-	(function setupMercator() {
-		// FIXME: MERCATOR_LIMIT_1 and MERCATOR_LIMIT_2 are not valid when
-		// the small scale projection changes, as they are relative to the small-scale graticule height !?
-	 
-		var mercatorMapSize, smallScaleProjection, graticuleHeight, sf;
-		
-		// size of web mercator in pixels at web map scale where the transition to
-		// the web mercator projection occurs
-		mercatorMapSize = Math.pow(2, 8 + MERCATOR_LIMIT_WEB_MAP_SCALE);
 
-		// height of the adaptive map in coordinates projected with the unary sphere
-		smallScaleProjection = ProjectionFactory.getSmallScaleProjection(smallScaleMapProjectionName);
-		graticuleHeight = 2 * ProjectionFactory.halfCentralMeridianLengthOfSmallScaleProjection(smallScaleProjection);
+	var MERCATOR_TRANSITION_WIDTH = 0.75; ( function setupMercator() {
+			// FIXME: MERCATOR_LIMIT_1 and MERCATOR_LIMIT_2 are not valid when
+			// the small scale projection changes, as they are relative to the small-scale graticule height !?
 
-		// scale factor to fill the canvas with the projected map
-		sf = canvasHeight / graticuleHeight;
+			var mercatorMapSize, smallScaleProjection, graticuleHeight, sf;
 
-		// scale factor where the web mercator is used
-		MERCATOR_LIMIT_2 = mercatorMapSize / (Math.PI * 2 * sf);
+			// size of web mercator in pixels at web map scale where the transition to
+			// the web mercator projection occurs
+			mercatorMapSize = Math.pow(2, 8 + MERCATOR_LIMIT_WEB_MAP_SCALE);
 
-		// scale factor where the transition towards the web mercator starts
-		MERCATOR_LIMIT_1 = MERCATOR_LIMIT_2 - MERCATOR_TRANSITION_WIDTH;
-	}());
-	
+			// height of the adaptive map in coordinates projected with the unary sphere
+			smallScaleProjection = ProjectionFactory.getSmallScaleProjection(smallScaleMapProjectionName);
+			graticuleHeight = 2 * ProjectionFactory.halfCentralMeridianLengthOfSmallScaleProjection(smallScaleProjection);
+
+			// scale factor to fill the canvas with the projected map
+			sf = canvasHeight / graticuleHeight;
+
+			// scale factor where the web mercator is used
+			MERCATOR_LIMIT_2 = mercatorMapSize / (Math.PI * 2 * sf);
+
+			// scale factor where the transition towards the web mercator starts
+			MERCATOR_LIMIT_1 = MERCATOR_LIMIT_2 - MERCATOR_TRANSITION_WIDTH;
+		}());
+
 	function projectionChanged() {
 		map.updateProjection();
 		projectionChangeListener(map);
@@ -415,7 +416,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		if (!Array.isArray(layers)) {
 			return;
 		}
-		
+
 		stats.begin();
 
 		var projection = this.updateProjection();
@@ -582,7 +583,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 			var metrics = ctx.measureText(txt);
 			ctx.fillText(txt, canvasWidth - metrics.width - typeSize, canvasHeight - typeSize * 0.5);
 		}
-		
+
 		stats.end();
 	};
 
@@ -643,9 +644,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		if (Array.isArray(layers)) {
 			for ( i = 0, nLayers = layers.length; i < nLayers; i += 1) {
 				layer = layers[i];
-				if ( layer instanceof RasterLayerForwardProjection 
-					|| layer instanceof RasterLayerInverseProjection
-					|| layer instanceof VideoLayer) {
+				if ( layer instanceof RasterLayer || layer instanceof VideoLayer) {
 					layer.canvas = rasterCanvas;
 				} else {
 					layer.canvas = vectorCanvas;
@@ -790,6 +789,14 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		debugAdaptiveResolutionGrid = adaptiveresolutiongrid;
 	};
 
+	this.isForwardRasterProjection = function() {
+		return debugForwardRasterProjection;
+	};
+
+	this.setForwardRasterProjection = function(forwardRasterProjection) {
+		debugForwardRasterProjection = forwardRasterProjection;
+	};
+
 	this.isEquatorSnapping = function() {
 		return snapEquator;
 	};
@@ -821,8 +828,22 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 
 	this.setGeometryResolution = function(resolution) {
 		var layer, nLayers, i;
+		
 		geometryResolution = resolution;
+		
+		if (Array.isArray(layers)) {
+			for ( i = 0, nLayers = layers.length; i < nLayers; i += 1) {
+				layer = layers[i];
+				if ( typeof layer.adjustTesselationDensity === 'function') {
+					layer.adjustTesselationDensity();
+				}
+			}
+		}
+		this.render();
+	};
 
+	this.reloadGeometry = function() {
+		var layer, nLayers, i;
 		if (Array.isArray(layers)) {
 			for ( i = 0, nLayers = layers.length; i < nLayers; i += 1) {
 				layer = layers[i];
@@ -831,7 +852,5 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 				}
 			}
 		}
-
-		this.render();
 	};
 }

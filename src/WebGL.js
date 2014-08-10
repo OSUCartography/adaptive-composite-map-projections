@@ -164,9 +164,9 @@ WebGL.setDefaultUniforms = function(gl, program) {"use strict";
     gl.uniform1f(gl.getUniformLocation(program, 'wagnerCA'), 0);
     gl.uniform1f(gl.getUniformLocation(program, 'wagnerCB'), 0);
 
-    gl.uniform1f(gl.getUniformLocation(program, 'n'), 0);
-    gl.uniform1f(gl.getUniformLocation(program, 'c'), 0);
-    gl.uniform1f(gl.getUniformLocation(program, 'rho0'), 0);
+    gl.uniform1f(gl.getUniformLocation(program, 'albersN'), 0);
+    gl.uniform1f(gl.getUniformLocation(program, 'albersC'), 0);
+    gl.uniform1f(gl.getUniformLocation(program, 'albersRho0'), 0);
     
     gl.uniform1i(gl.getUniformLocation(program, 'flagStrips'), 0); 
 
@@ -179,11 +179,11 @@ WebGL.setUniforms = function(gl, program, scale, lon0, uniforms, canvas, adaptiv
     var viewTransform, xScale, yScale, i, geometryBBox;
     // set default uniform values that are needed, e.g. rotation on sphere
     WebGL.setDefaultUniforms(gl, program);
-    gl.enableVertexAttribArray(gl.getAttribLocation(program, 'vPosition'));
+    gl.enableVertexAttribArray(gl.getAttribLocation(program, 'vertexPosition'));
 
     gl.uniform1f(gl.getUniformLocation(program, 'meridian'), lon0);
 
-    if (typeof adaptiveGridConf !== 'undefined' && adaptiveGridConf.useAdaptiveResolutionGrid && adaptiveGridConf.mapScale > adaptiveGridConf.startScaleLimit){
+    if (adaptiveGridConf.useAdaptiveResolutionGrid && adaptiveGridConf.mapScale > adaptiveGridConf.startScaleLimit){
 		geometryBBox = adaptiveGridConf.geometryBBox;
         gl.uniform1f(gl.getUniformLocation(program, 'geometryCentralLat'), (geometryBBox.north + geometryBBox.south) / 2);
         xScale = Math.abs(geometryBBox.east - geometryBBox.west) / 2;
@@ -196,7 +196,7 @@ WebGL.setUniforms = function(gl, program, scale, lon0, uniforms, canvas, adaptiv
     viewTransform.scale(canvas.height / canvas.width * scale, scale, 1, 1);
     gl.uniformMatrix4fv(gl.getUniformLocation(program, 'modelViewProjMatrix'), false, viewTransform.getAsFloat32Array());
 
-    // uniforms for projection
+    // uniforms for projections
     for (i in uniforms) {
         if (uniforms.hasOwnProperty(i)) {
             if (Array.isArray(uniforms[i])) {
@@ -211,8 +211,11 @@ WebGL.setUniforms = function(gl, program, scale, lon0, uniforms, canvas, adaptiv
     gl.uniform2f(gl.getUniformLocation(program, 'dXY'), canvas.width / 2, canvas.height / 2);
 };
 
-WebGL.loadGeometry = function(gl, resolution) {"use strict";
-    var vertices, b, x, y, xIdx, yIdx, startY, stepY, idxCount, vbo, cellSize, geometryStrip = {};
+/**
+ * loads a tesselated sphere
+ */
+WebGL.loadSphereGeometry = function(gl, resolution) {"use strict";
+    var vertices, b, x, y, xIdx, yIdx, startY, stepY, idxCount, buffer, cellSize, geometry = {};
 
     cellSize = 2 / resolution;
     b = {        
@@ -250,32 +253,36 @@ WebGL.loadGeometry = function(gl, resolution) {"use strict";
         }
     }
 
-    vbo = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+    buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
     
-    geometryStrip.buffer = vbo;
-    geometryStrip.vertexCount = vertices.length / 2;
-    geometryStrip.cellSize = cellSize;
+    geometry.buffer = buffer;
+    geometry.vertexCount = vertices.length / 2;
+    geometry.cellSize = cellSize;
 
-    return geometryStrip;
+    return geometry;
 };
 
-WebGL.loadInverseProjectionGeometry = function(gl) {"use strict";
-    var vertices, triangleVertexPositionBuffer;
+/**
+ * loads a 2D rectangle covering the entire viewport
+ */
+WebGL.loadRectangleGeometry = function(gl) {"use strict";
+    var vertices, buffer, geometry = {};
 
-    triangleVertexPositionBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
-    // FIXME make 2D
-    vertices = [-1, -1, 0, +1, -1, 0, +1, +1, 0, +1, +1, 0, -1, +1, 0, -1, -1, 0];
+    buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    vertices = [-1, -1, +1, -1, +1, +1, +1, +1, -1, +1, -1, -1];
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-    triangleVertexPositionBuffer.itemSize = 3;
-    triangleVertexPositionBuffer.numberOfItems = 6;
-    return triangleVertexPositionBuffer;
+    
+    geometry.buffer = buffer;
+    geometry.itemSize = 2; // FIXME not used
+    geometry.vertexCount = 6;
+    return geometry;
 };
 
-WebGL.deleteGeometry = function(gl, geometryStrip) {"use strict";
-    gl.deleteBuffer(geometryStrip.buffer);
+WebGL.deleteGeometry = function(gl, geometry) {"use strict";
+    gl.deleteBuffer(geometry.buffer);
 };
 
 // Scale up a texture image to the next higher power of two dimension.
@@ -362,39 +369,32 @@ WebGL.clear = function(gl) {"use strict";
     gl.clear(gl.COLOR_BUFFER_BIT);
 };
 
-WebGL.draw = function(gl, drawWireframe, scale, lon0, uniforms, canvas, geometryStrip, shaderProgram, adaptiveGridConf) {"use strict";
-    var vPositionIdx, drawMode = gl.TRIANGLE_STRIP;
-
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    
-    //FIXME hack 
-    gl.useProgram(shaderProgram);
-    
-    WebGL.setUniforms(gl, shaderProgram, scale, lon0, uniforms, canvas, adaptiveGridConf);
-    
-    gl.uniform1f(gl.getUniformLocation(shaderProgram, "antimeridianStripeCellSize"), geometryStrip.cellSize*Math.PI);
-    
-    vPositionIdx = gl.getAttribLocation(shaderProgram, 'vPosition');
-    gl.bindBuffer(gl.ARRAY_BUFFER, geometryStrip.buffer);
-    gl.vertexAttribPointer(vPositionIdx, 2, gl.FLOAT, false, 0, 0);
-    if(drawWireframe){
-        drawMode = gl.LINE_STRIP;
-    }
-    gl.drawArrays(drawMode, 0, geometryStrip.vertexCount);
-};
-
-WebGL.drawInverseProjection = function(gl, scale, lon0, uniforms, canvas, geometryStrips, shaderProgram) {"use strict";
+WebGL.draw = function(gl, drawMode, scale, lon0, uniforms, canvas, geometry, shaderProgram, adaptiveGridConf) {"use strict";
     var vertexPositionAttribute;
 
     gl.clear(gl.COLOR_BUFFER_BIT);
-
     gl.useProgram(shaderProgram);
+    WebGL.setUniforms(gl, shaderProgram, scale, lon0, uniforms, canvas, adaptiveGridConf);
+    
+    gl.uniform1f(gl.getUniformLocation(shaderProgram, "antimeridianStripeCellSize"), geometry.cellSize*Math.PI);
 
-    WebGL.setUniforms(gl, shaderProgram, scale, lon0, uniforms, canvas);
-    vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "vertexPosition");
+    gl.bindBuffer(gl.ARRAY_BUFFER, geometry.buffer);
+    vertexPositionAttribute = gl.getAttribLocation(shaderProgram, 'vertexPosition');
+    gl.vertexAttribPointer(vertexPositionAttribute, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vertexPositionAttribute);
+    gl.drawArrays(drawMode, 0, geometry.vertexCount);
+};
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, geometryStrips);
-    gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
+WebGL.drawInverseProjection = function(gl, drawMode, scale, lon0, uniforms, canvas, geometry, shaderProgram) {"use strict";
+    var vertexPositionAttribute;
+
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.useProgram(shaderProgram);
+    WebGL.setUniforms(gl, shaderProgram, scale, lon0, uniforms, canvas);
+    
+    gl.bindBuffer(gl.ARRAY_BUFFER, geometry.buffer);
+    vertexPositionAttribute = gl.getAttribLocation(shaderProgram, 'vertexPosition');
+    gl.vertexAttribPointer(vertexPositionAttribute, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vertexPositionAttribute);
+    gl.drawArrays(drawMode, 0, geometry.vertexCount);
 };

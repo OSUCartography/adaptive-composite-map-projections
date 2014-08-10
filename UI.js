@@ -251,6 +251,7 @@ $(window).load(function() {"use strict";
     document.getElementById("changeScaleCheckbox").checked = map.isZoomToMap();
     document.getElementById("rotateSmallScaleCheckbox").checked = map.isRotateSmallScale();
     document.getElementById("drawOverlayCheckbox").checked = map.isDrawingOverlay();
+    document.getElementById("forwardRadioButton").checked = map.isForwardRasterProjection();
     document.getElementById("snapEquatorCheckbox").checked = map.isEquatorSnapping();
     document.getElementById("renderWireframeCheckbox").checked = map.isRenderingWireframe();
     document.getElementById("adaptiveResolutionGridCheckbox").checked = map.isAdaptiveResolutionGrid();
@@ -476,6 +477,26 @@ $(window).load(function() {"use strict";
     $("#drawOverlayCheckbox").on("click", function() {
         map.setDrawOverlay(this.checked);
         map.render();
+    });
+    
+    $("#forwardRadioButton").on("click", function() {
+        map.setForwardRasterProjection(this.checked);
+        map.reloadGeometry();
+        map.render();
+        $("#adaptiveResolutionGridCheckbox").prop("disabled", false);
+        $("#renderWireframeCheckbox").prop("disabled", false);
+        $('#geometry-resolution-slider').slider({ disabled: false });
+    });
+
+	$("#inverseRadioButton").on("click", function() {
+        map.setForwardRasterProjection(!this.checked);
+        map.reloadGeometry();
+        map.render();
+        $("#adaptiveResolutionGridCheckbox").prop("disabled", true);
+        $("#renderWireframeCheckbox").prop("disabled", true);
+        map.setRenderWireframe(false);
+        $("#renderWireframeCheckbox").prop( "checked", false );
+        $('#geometry-resolution-slider').slider({ disabled: true });
     });
 
     $("#renderWireframeCheckbox").on("click", function() {

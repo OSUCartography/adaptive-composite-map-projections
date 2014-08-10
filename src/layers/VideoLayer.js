@@ -1,7 +1,7 @@
 /*globals WebGL */
 function VideoLayer(videoDOMElement) {"use strict";
 
-    var gl = null, map, shaderProgram, sphereGeometry = [], texture = null, timer;
+    var gl = null, map, shaderProgram, geometry = [], texture = null, timer;
     this.canvas = null;
     this.projection = null;
     this.mapScale = 1;
@@ -28,7 +28,7 @@ function VideoLayer(videoDOMElement) {"use strict";
 
 
     this.render = function() {
-        var uniforms, adaptiveGridConf;
+        var uniforms, scale, adaptiveGridConf;
 
         // render() is calling itself in a rendering loop, and render() is also called when the projection changes.
         // To avoid multiple concurrent rendering loops, the current loop has to be stopped.
@@ -51,7 +51,8 @@ function VideoLayer(videoDOMElement) {"use strict";
 			mapScale : map.getZoomFactor(),
 			startScaleLimit : map.conf.zoomLimit2
         };
-        WebGL.draw(gl, map.isRenderingWireframe(), this.mapScale / this.refScaleFactor * this.glScale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram, adaptiveGridConf);
+        scale = this.mapScale / this.refScaleFactor * this.glScale;
+        WebGL.draw(gl, gl.TRIANGLE_STRIP, scale, this.mapCenter.lon0, uniforms, this.canvas, geometry, shaderProgram, adaptiveGridConf);
         timer = window.requestAnimationFrame(function() {
             map.render(false);
         });
@@ -65,7 +66,7 @@ function VideoLayer(videoDOMElement) {"use strict";
             WebGL.clear(gl);
             gl.deleteTexture(texture);
             gl.deleteProgram(shaderProgram);
-            WebGL.deleteGeometry(gl, sphereGeometry);
+            WebGL.deleteGeometry(gl, geometry);
         }
         videoDOMElement.pause();
     };
@@ -78,14 +79,14 @@ function VideoLayer(videoDOMElement) {"use strict";
         }
         shaderProgram = WebGL.loadShaderProgram(gl, 'shader/vs/forward.vert', 'shader/fs/forward.frag');
         texture = gl.createTexture();
-        sphereGeometry = WebGL.loadGeometry(gl, map.getGeometryResolution());
+        geometry = WebGL.loadSphereGeometry(gl, map.getGeometryResolution());
         if (videoDOMElement.paused) {
             videoDOMElement.play();
         }
     };
     
     this.reloadGeometry = function(){
-        sphereGeometry = WebGL.loadGeometry(gl, map.getGeometryResolution());
+        geometry = WebGL.loadSphereGeometry(gl, map.getGeometryResolution());
     };
 
     this.resize = function(w, h) {
