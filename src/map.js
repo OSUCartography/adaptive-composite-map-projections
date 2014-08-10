@@ -1,4 +1,4 @@
-/*globals RasterLayer, VideoLayer, resizeCanvasElement, clone, TransformedProjection, TransformedLambertAzimuthal, ProjectionFactory, Stats */
+/*globals RasterLayerForwardProjection, RasterLayerInverseProjection, VideoLayer, resizeCanvasElement, clone, TransformedProjection, TransformedLambertAzimuthal, ProjectionFactory, Stats */
 
 // FIXME
 var MERCATOR_LIMIT_1, MERCATOR_LIMIT_2;
@@ -643,7 +643,9 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		if (Array.isArray(layers)) {
 			for ( i = 0, nLayers = layers.length; i < nLayers; i += 1) {
 				layer = layers[i];
-				if ( layer instanceof RasterLayer || layer instanceof VideoLayer) {
+				if ( layer instanceof RasterLayerForwardProjection 
+					|| layer instanceof RasterLayerInverseProjection
+					|| layer instanceof VideoLayer) {
 					layer.canvas = rasterCanvas;
 				} else {
 					layer.canvas = vectorCanvas;

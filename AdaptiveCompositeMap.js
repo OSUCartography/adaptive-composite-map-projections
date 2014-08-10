@@ -1,4 +1,4 @@
-/* Build Time: August 9, 2014 02:55:27 PM */
+/* Build Time: August 9, 2014 06:31:20 PM */
 /*globals LambertCylindricalEqualArea, ProjectionFactory */
 function MapEvents(map) {"use strict";
 
@@ -1085,7 +1085,6 @@ WebGL.loadShader = function(gl, url) {"use strict";
     req.send(null);
     if (req.status !== 200/* http */ && req.status !== 0 /* local file*/) {
         throw new Error("Could not load shader at " + url);
-
     }
 
     shader = gl.createShader(url.endsWith("frag") ? gl.FRAGMENT_SHADER : gl.VERTEX_SHADER);
@@ -1238,7 +1237,7 @@ WebGL.setUniforms = function(gl, program, scale, lon0, uniforms, canvas, adaptiv
 
     gl.uniform1f(gl.getUniformLocation(program, 'meridian'), lon0);
 
-    if (adaptiveGridConf.useAdaptiveResolutionGrid && adaptiveGridConf.mapScale > adaptiveGridConf.startScaleLimit){
+    if (typeof adaptiveGridConf !== 'undefined' && adaptiveGridConf.useAdaptiveResolutionGrid && adaptiveGridConf.mapScale > adaptiveGridConf.startScaleLimit){
 		geometryBBox = adaptiveGridConf.geometryBBox;
         gl.uniform1f(gl.getUniformLocation(program, 'geometryCentralLat'), (geometryBBox.north + geometryBBox.south) / 2);
         xScale = Math.abs(geometryBBox.east - geometryBBox.west) / 2;
@@ -1316,6 +1315,19 @@ WebGL.loadGeometry = function(gl, resolution) {"use strict";
     return geometryStrip;
 };
 
+WebGL.loadInverseProjectionGeometry = function(gl) {"use strict";
+    var vertices, triangleVertexPositionBuffer;
+
+    triangleVertexPositionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
+    // FIXME make 2D
+    vertices = [-1, -1, 0, +1, -1, 0, +1, +1, 0, +1, +1, 0, -1, +1, 0, -1, -1, 0];
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+    triangleVertexPositionBuffer.itemSize = 3;
+    triangleVertexPositionBuffer.numberOfItems = 6;
+    return triangleVertexPositionBuffer;
+};
+
 WebGL.deleteGeometry = function(gl, geometryStrip) {"use strict";
     gl.deleteBuffer(geometryStrip.buffer);
 };
@@ -1375,7 +1387,7 @@ WebGL.loadStaticTexture = function(gl, url, map, texture) {"use strict";
         if (image === null) {
             throw new Error("Invalid texture");
         }
-		//gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, texture);
         /*var glError = gl.getError();
@@ -1423,6 +1435,22 @@ WebGL.draw = function(gl, drawWireframe, scale, lon0, uniforms, canvas, geometry
         drawMode = gl.LINE_STRIP;
     }
     gl.drawArrays(drawMode, 0, geometryStrip.vertexCount);
+};
+
+WebGL.drawInverseProjection = function(gl, scale, lon0, uniforms, canvas, geometryStrips, shaderProgram) {"use strict";
+    var vertexPositionAttribute;
+
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    gl.useProgram(shaderProgram);
+
+    WebGL.setUniforms(gl, shaderProgram, scale, lon0, uniforms, canvas);
+    vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "vertexPosition");
+    gl.enableVertexAttribArray(vertexPositionAttribute);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, geometryStrips);
+    gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
 };
 //
 // stateful helper for binaryajax.js's BinaryFile class
@@ -3979,9 +4007,9 @@ PolylineLayer.intermediateGreatCirclePoint = function(lon1, lat1, lon2, lat2, f,
     pt[1] = Math.atan2(z, Math.sqrt(x * x + y * y));
     pt[0] = Math.atan2(y, x);
 }; 
-/*globals WebGL, Stats */
+/*globals WebGL */
 
-function RasterLayer(url) {"use strict";
+function RasterLayerForwardProjection(url) {"use strict";
     var gl = null, map, texture, sphereGeometry, shaderProgram;
     
     this.canvas = null;
@@ -3993,14 +4021,16 @@ function RasterLayer(url) {"use strict";
     };
 
     this.render = function() {
+		var uniforms, adaptiveGridConf;
+
         if (!texture.imageLoaded || gl === null) {
             return;
         }
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.uniform1i(gl.getUniformLocation(shaderProgram, "texture"), 0);
-        var uniforms = this.projection.getShaderUniforms();
-        var adaptiveGridConf = {
+        uniforms = this.projection.getShaderUniforms();
+        adaptiveGridConf = {
 			useAdaptiveResolutionGrid : map.isAdaptiveResolutionGrid(),
 			geometryBBox : this.visibleGeometryBoundingBoxCenteredOnLon0,
 			mapScale : map.getZoomFactor(),
@@ -4040,6 +4070,72 @@ function RasterLayer(url) {"use strict";
 
 	this.reloadGeometry = function(){
         sphereGeometry = WebGL.loadGeometry(gl, map.getGeometryResolution());
+    };
+    
+    this.resize = function(w, h) {
+        if (gl !== null) {
+            // http://www.khronos.org/registry/webgl/specs/1.0/#2.3
+            gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+        }
+    };
+}
+/*globals WebGL */
+
+function RasterLayerInverseProjection(url) {"use strict";
+    var gl = null, map, texture, sphereGeometry, shaderProgram;
+    
+    this.canvas = null;
+    this.projection = null;
+    this.mapScale = 1;
+    this.mapCenter = {
+        lon0 : 0,
+        lat0 : 0
+    };
+
+    this.render = function() {
+		var uniforms, scale;
+
+        if (!texture.imageLoaded || gl === null) {
+            return;
+        }
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.uniform1i(gl.getUniformLocation(shaderProgram, "texture"), 0);
+        uniforms = this.projection.getShaderUniforms();
+        scale = this.mapScale / this.refScaleFactor * this.glScale;
+        WebGL.drawInverseProjection(gl, scale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram);       
+    };
+
+    this.clear = function() {
+        if (gl !== null) {
+            WebGL.clear(gl);
+            gl.deleteTexture(texture);
+            gl.deleteProgram(shaderProgram);
+            WebGL.deleteGeometry(gl, sphereGeometry);
+        }
+    };
+
+    function loadData(gl) {
+        gl.clearColor(0, 0, 0, 0);
+        shaderProgram = WebGL.loadShaderProgram(gl, 'shader/vs/inverse.vert', 'shader/fs/inverse.frag');
+        texture = gl.createTexture();
+        sphereGeometry = WebGL.loadInverseProjectionGeometry(gl);
+        WebGL.loadStaticTexture(gl, url, map, texture);
+        WebGL.enableAnisotropicFiltering(gl, texture);
+    }
+
+    this.load = function(m) {
+        map = m;
+        gl = WebGL.init(this.canvas);
+        if (gl === null) {
+            throw new Error("WebGL is not available. Firefox or Chrome is required.");
+        }
+        WebGL.addContextLostAndRestoredHandler(this.canvas, loadData);
+        loadData(gl);
+    };
+
+	this.reloadGeometry = function(){
+        sphereGeometry = WebGL.loadInverseProjectionGeometry(gl);
     };
     
     this.resize = function(w, h) {
@@ -4394,7 +4490,7 @@ document.write(
 	+ "End Function\r\n"
 	+ "</script>\r\n"
 );
-/*globals RasterLayer, VideoLayer, resizeCanvasElement, clone, TransformedProjection, TransformedLambertAzimuthal, ProjectionFactory */
+/*globals RasterLayerForwardProjection, RasterLayerInverseProjection, VideoLayer, resizeCanvasElement, clone, TransformedProjection, TransformedLambertAzimuthal, ProjectionFactory, Stats */
 
 // FIXME
 var MERCATOR_LIMIT_1, MERCATOR_LIMIT_2;
@@ -5039,7 +5135,9 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		if (Array.isArray(layers)) {
 			for ( i = 0, nLayers = layers.length; i < nLayers; i += 1) {
 				layer = layers[i];
-				if ( layer instanceof RasterLayer || layer instanceof VideoLayer) {
+				if ( layer instanceof RasterLayerForwardProjection 
+					|| layer instanceof RasterLayerInverseProjection
+					|| layer instanceof VideoLayer) {
 					layer.canvas = rasterCanvas;
 				} else {
 					layer.canvas = vectorCanvas;
@@ -8350,5 +8448,5 @@ ShpError.ERROR_UNDEFINED = 0;
 // a 'no data' error is thrown when the byte array runs out of data.
 ShpError.ERROR_NODATA = 1;
 
-var adaptiveCompositeMapBuildTimeStamp = "August 9, 2014 02:55:27 PM";
+var adaptiveCompositeMapBuildTimeStamp = "August 9, 2014 06:31:20 PM";
 		

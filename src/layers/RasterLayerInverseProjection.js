@@ -1,6 +1,6 @@
 /*globals WebGL */
 
-function RasterLayer(url) {"use strict";
+function RasterLayerInverseProjection(url) {"use strict";
     var gl = null, map, texture, sphereGeometry, shaderProgram;
     
     this.canvas = null;
@@ -12,7 +12,7 @@ function RasterLayer(url) {"use strict";
     };
 
     this.render = function() {
-		var uniforms, adaptiveGridConf;
+		var uniforms, scale;
 
         if (!texture.imageLoaded || gl === null) {
             return;
@@ -21,14 +21,8 @@ function RasterLayer(url) {"use strict";
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.uniform1i(gl.getUniformLocation(shaderProgram, "texture"), 0);
         uniforms = this.projection.getShaderUniforms();
-        adaptiveGridConf = {
-			useAdaptiveResolutionGrid : map.isAdaptiveResolutionGrid(),
-			geometryBBox : this.visibleGeometryBoundingBoxCenteredOnLon0,
-			mapScale : map.getZoomFactor(),
-			startScaleLimit : map.conf.zoomLimit2
-        };
-        
-        WebGL.draw(gl, map.isRenderingWireframe(), this.mapScale / this.refScaleFactor * this.glScale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram, adaptiveGridConf);
+        scale = this.mapScale / this.refScaleFactor * this.glScale;
+        WebGL.drawInverseProjection(gl, scale, this.mapCenter.lon0, uniforms, this.canvas, sphereGeometry, shaderProgram);       
     };
 
     this.clear = function() {
@@ -42,9 +36,9 @@ function RasterLayer(url) {"use strict";
 
     function loadData(gl) {
         gl.clearColor(0, 0, 0, 0);
-        shaderProgram = WebGL.loadShaderProgram(gl, 'shader/vs/forward.vert', 'shader/fs/forward.frag');
+        shaderProgram = WebGL.loadShaderProgram(gl, 'shader/vs/inverse.vert', 'shader/fs/inverse.frag');
         texture = gl.createTexture();
-        sphereGeometry = WebGL.loadGeometry(gl, map.getGeometryResolution());
+        sphereGeometry = WebGL.loadInverseProjectionGeometry(gl);
         WebGL.loadStaticTexture(gl, url, map, texture);
         WebGL.enableAnisotropicFiltering(gl, texture);
     }
@@ -60,7 +54,7 @@ function RasterLayer(url) {"use strict";
     };
 
 	this.reloadGeometry = function(){
-        sphereGeometry = WebGL.loadGeometry(gl, map.getGeometryResolution());
+        sphereGeometry = WebGL.loadInverseProjectionGeometry(gl);
     };
     
     this.resize = function(w, h) {

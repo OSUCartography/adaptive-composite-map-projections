@@ -31,7 +31,6 @@ WebGL.loadShader = function(gl, url) {"use strict";
     req.send(null);
     if (req.status !== 200/* http */ && req.status !== 0 /* local file*/) {
         throw new Error("Could not load shader at " + url);
-
     }
 
     shader = gl.createShader(url.endsWith("frag") ? gl.FRAGMENT_SHADER : gl.VERTEX_SHADER);
@@ -184,7 +183,7 @@ WebGL.setUniforms = function(gl, program, scale, lon0, uniforms, canvas, adaptiv
 
     gl.uniform1f(gl.getUniformLocation(program, 'meridian'), lon0);
 
-    if (adaptiveGridConf.useAdaptiveResolutionGrid && adaptiveGridConf.mapScale > adaptiveGridConf.startScaleLimit){
+    if (typeof adaptiveGridConf !== 'undefined' && adaptiveGridConf.useAdaptiveResolutionGrid && adaptiveGridConf.mapScale > adaptiveGridConf.startScaleLimit){
 		geometryBBox = adaptiveGridConf.geometryBBox;
         gl.uniform1f(gl.getUniformLocation(program, 'geometryCentralLat'), (geometryBBox.north + geometryBBox.south) / 2);
         xScale = Math.abs(geometryBBox.east - geometryBBox.west) / 2;
@@ -262,6 +261,19 @@ WebGL.loadGeometry = function(gl, resolution) {"use strict";
     return geometryStrip;
 };
 
+WebGL.loadInverseProjectionGeometry = function(gl) {"use strict";
+    var vertices, triangleVertexPositionBuffer;
+
+    triangleVertexPositionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
+    // FIXME make 2D
+    vertices = [-1, -1, 0, +1, -1, 0, +1, +1, 0, +1, +1, 0, -1, +1, 0, -1, -1, 0];
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+    triangleVertexPositionBuffer.itemSize = 3;
+    triangleVertexPositionBuffer.numberOfItems = 6;
+    return triangleVertexPositionBuffer;
+};
+
 WebGL.deleteGeometry = function(gl, geometryStrip) {"use strict";
     gl.deleteBuffer(geometryStrip.buffer);
 };
@@ -321,7 +333,7 @@ WebGL.loadStaticTexture = function(gl, url, map, texture) {"use strict";
         if (image === null) {
             throw new Error("Invalid texture");
         }
-		//gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, texture);
         /*var glError = gl.getError();
@@ -369,4 +381,20 @@ WebGL.draw = function(gl, drawWireframe, scale, lon0, uniforms, canvas, geometry
         drawMode = gl.LINE_STRIP;
     }
     gl.drawArrays(drawMode, 0, geometryStrip.vertexCount);
+};
+
+WebGL.drawInverseProjection = function(gl, scale, lon0, uniforms, canvas, geometryStrips, shaderProgram) {"use strict";
+    var vertexPositionAttribute;
+
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    gl.useProgram(shaderProgram);
+
+    WebGL.setUniforms(gl, shaderProgram, scale, lon0, uniforms, canvas);
+    vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "vertexPosition");
+    gl.enableVertexAttribArray(vertexPositionAttribute);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, geometryStrips);
+    gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
 };

@@ -312,7 +312,7 @@ void main(void) {
 		xy = mix(merc, transWagner, mixWeight);
         
 		alongAntimeridian = 0.;
-		textureCoord = vPosition / vec2(360.0, -180.0) + 0.5;
+		textureCoord = vPosition / vec2(360.0, 180.0) + 0.5;
 	} else {
 		lonLatTransformed = transformSphere(lonLat);
         
@@ -321,7 +321,7 @@ void main(void) {
         
     	alongAntimeridian = 1. - step(antimeridianStripeCellSize, abs(abs(lonLatTransformed.x) - PI));
         
-    	textureCoord = lonLatTransformed / vec2(2. * PI, -PI) + 0.5;
+    	textureCoord = lonLatTransformed / vec2(2. * PI, PI) + 0.5;
         
     	if (projectionID == MIXPROJECTION) {
     		xy = projectionMix(lonLat);

@@ -555,9 +555,6 @@ void main(void) {
         }
         lonLat.x += meridian;
         
-        // FIXME: use gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1); when texture is loaded instead
-        lonLat.y *= -1.;
-        
         gl_FragColor = texture2D(texture, lonLat / vec2(PI * 2., PI) + 0.5);
     } else {
         gl_FragColor = texture2D(texture, textureCoord);

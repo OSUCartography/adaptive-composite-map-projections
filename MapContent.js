@@ -29,7 +29,7 @@
  * textBaseline (vertical alignment, default is alphabetic): top, hanging, middle, alphabetic, ideographic, bottom
  */
 
-function getLayers() {
+function getLayers() { "use strict";
 
     var maps = [];
     var riverStrokeColor = '#aaa';
@@ -406,9 +406,9 @@ function getLayers() {
     //maps.push(layers);
 
     /**
-     * Natural Earth Raster
+     * Natural Earth Raster with forward projection
      */
-    layers = [new RasterLayer("data_layers/NE_8192x4096.jpg"), // NE_16384x8192.jpg"), // project-quicksilver.jpg"), //NE_8192x4096.jpg"),
+    layers = [new RasterLayerForwardProjection("data_layers/NE_8192x4096.jpg"), // NE_16384x8192.jpg"), // project-quicksilver.jpg"), //NE_8192x4096.jpg"),
 
     new Graticule({
         strokeStyle : '#444',
@@ -425,6 +425,26 @@ function getLayers() {
 
     maps.push(layers);
 
+	/**
+     * Natural Earth Raster with inverse projection
+     */
+    layers = [new RasterLayerInverseProjection("data_layers/NE_8192x4096.jpg"), // NE_16384x8192.jpg"), // project-quicksilver.jpg"), //NE_8192x4096.jpg"),
+
+    new Graticule({
+        strokeStyle : '#444',
+        lineWidth : 1,
+        globalAlpha : 0.5
+    }, null, // scale visibility
+    2, // radius of pole point in pixels
+    15 // distance of meridian lines from poles in pixels
+    ), new GraticuleOutline({
+        strokeStyle : '#444',
+        lineWidth : 1,
+        globalAlpha : 0.5
+    })];
+
+    maps.push(layers);
+    
     /**
      * Video1
      */
