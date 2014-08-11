@@ -63,7 +63,13 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 
 	// if true, raster images are projected with forward transformation, otherwise with an inverse transformation
 	debugForwardRasterProjection = true,
-
+	
+	// if true, mipMap is created for texture minification filtering
+	debugMipMap = true,
+		
+	// if true, anisotropic filtering is used for texture sampling if available
+	debugAnisotropicFiltering = true,
+	
 	// Latitude limit between clyindrical and conic projection at large scales
 	// Use cylindrical projection between the equator and cylindricalLowerLat
 	cylindricalLowerLat = 15 * Math.PI / 180,
@@ -797,6 +803,22 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		debugForwardRasterProjection = forwardRasterProjection;
 	};
 
+	this.isMipMap = function() {
+		return debugMipMap;
+	};
+
+	this.setMipMap= function(mipMap) {
+		debugMipMap = mipMap;
+	};
+	
+	this.isAnistropicFiltering = function() {
+		return debugAnisotropicFiltering;
+	};
+
+	this.setAnisotropicFiltering = function(anisotropicFiltering) {
+		debugAnisotropicFiltering = anisotropicFiltering;
+	};
+	
 	this.isEquatorSnapping = function() {
 		return snapEquator;
 	};

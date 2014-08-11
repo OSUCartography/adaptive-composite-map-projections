@@ -203,23 +203,27 @@
 					<label for="drawOverlayCheckbox">Show map overlay</label>
 					<br />
 					<br />
-					<input type="radio" id="forwardRadioButton" name="projectionDirection" value="forwardProjection" checked>
+					<input type="radio" id="forwardRadioButton" name="projectionDirection" value="forwardProjection" checked />
 					<label for="forwardRadioButton">Forward Raster Projection</label>
 					<br>
-					<input type="radio" id="inverseRadioButton" name="projectionDirection" value="inverseProjection">
+					<input type="radio" id="inverseRadioButton" name="projectionDirection" value="inverseProjection" />
 					<label for="inverseRadioButton">Inverse Raster Projection</label>
+					<br />
+					<br />
+					<input type="checkbox" id="mipMapCheckbox" value="mipMap" checked />
+					<label for="mipMapCheckbox">Texture Minification Filtering with MipMap</label>
+					<br />
+					<input type="checkbox" id="anisotropicFilteringCheckbox" value="anisotropicFiltering" checked />
+					<label for="anisotropicFilteringCheckbox">Anisotropic Texture Filtering (requires MipMap)</label>
 					<br />
 					<br />
 					<input type="checkbox" id="renderWireframeCheckbox" value="renderWireframe" />
 					<label for="renderWireframeCheckbox">Render Wireframe</label>
 					<br />
-					<br />
 					<input type="checkbox" id="adaptiveResolutionGridCheckbox" value="adaptiveResolutionGrid" checked />
 					<label for="adaptiveResolutionGridCheckbox">Adaptive Resolution Grid</label>
 					<br />
-					<br />
 					Geometry Resolution (low - high)
-					<br />
 					<br />
 					<div id="geometry-resolution-slider"></div>
 					<br />
