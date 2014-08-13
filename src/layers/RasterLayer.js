@@ -64,7 +64,7 @@ function RasterLayer(url) {
 		} else {
 			geometry = WebGL.loadRectangleGeometry(gl);
 		}
-		WebGL.loadStaticTexture(gl, url, map, texture, map.isMipMap());
+		WebGL.loadStaticTexture(gl, url, map, texture);
 		if (map.isAnistropicFiltering()) {
 			WebGL.enableAnisotropicFiltering(gl, texture);
 		}

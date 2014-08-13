@@ -418,8 +418,8 @@ function getLayers() { "use strict";
     2, // radius of pole point in pixels
     15 // distance of meridian lines from poles in pixels
     ), new GraticuleOutline({
-        strokeStyle : '#444',
-        lineWidth : 1,
+        strokeStyle : '#666',
+        lineWidth : 2,
         globalAlpha : 0.5
     })];
 
@@ -503,10 +503,21 @@ function getLayers() { "use strict";
         strokeStyle : 'purple',
         lineWidth : 1,
         globalAlpha : 0.5
-    })
-    
-    ];
-
+    })];
     maps.push(layers);
+
+	layers = [new RasterLayer("data_layers/black_512x256.jpg"),
+
+    new Graticule({
+        strokeStyle : '#fff',
+        fillStyle : '#fff',
+        lineWidth : 2,
+        globalAlpha : 1
+    }, null, // scale visibility
+    2, // radius of pole point in pixels
+    15 // distance of meridian lines from poles in pixels
+    )];
+    maps.push(layers);
+    
     return maps;
 }

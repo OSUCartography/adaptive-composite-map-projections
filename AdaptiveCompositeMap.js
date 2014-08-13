@@ -1,4 +1,4 @@
-/* Build Time: August 10, 2014 11:06:42 PM */
+/* Build Time: August 11, 2014 01:45:26 PM */
 /*globals LambertCylindricalEqualArea, ProjectionFactory */
 function MapEvents(map) {"use strict";
 
@@ -1398,9 +1398,10 @@ WebGL.scaleTextureImage = function(gl, image) {
 // texture is lost if the WebGL context is lost
 // therefore don't attach any data to texture, such as texture.imageLoaded
 // also should store a reference to the loaded image somewhere to avoid reloading it multiple times.
-WebGL.loadStaticTexture = function(gl, url, map, texture, useMipMap) {
+WebGL.loadStaticTexture = function(gl, url, map, texture) {
 	"use strict";
-	var image = new Image();
+	var useMipMap = map.isMipMap(), image = new Image();
+	
 	// FIXME
 	texture.imageLoaded = false;
 	image.onload = function() {
@@ -1412,21 +1413,17 @@ WebGL.loadStaticTexture = function(gl, url, map, texture, useMipMap) {
 		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
 		gl.activeTexture(gl.TEXTURE0);
 		gl.bindTexture(gl.TEXTURE_2D, texture);
-		/*var glError = gl.getError();
-		 if (glError !== 0) {
-		 throw new Error("Texture binding error: " + glError);
-		 }*/
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
 		// mip maps are only available for power of two dimensions
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, useMipMap ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
 		if (useMipMap) {
 			gl.generateMipmap(gl.TEXTURE_2D);
 		}
+		
 		texture.imageLoaded = true;
 		map.render();
 	};
@@ -4092,7 +4089,7 @@ function RasterLayer(url) {
 		} else {
 			geometry = WebGL.loadRectangleGeometry(gl);
 		}
-		WebGL.loadStaticTexture(gl, url, map, texture, map.isMipMap());
+		WebGL.loadStaticTexture(gl, url, map, texture);
 		if (map.isAnistropicFiltering()) {
 			WebGL.enableAnisotropicFiltering(gl, texture);
 		}
@@ -4211,9 +4208,6 @@ function VideoLayer(videoDOMElement) {
 		videoDOMElement.pause();
 	};
 
-	function load() {
-		
-	}
 	
 	this.load = function(m) {
 		map = m;
@@ -8483,5 +8477,5 @@ ShpError.ERROR_UNDEFINED = 0;
 // a 'no data' error is thrown when the byte array runs out of data.
 ShpError.ERROR_NODATA = 1;
 
-var adaptiveCompositeMapBuildTimeStamp = "August 10, 2014 11:06:42 PM";
+var adaptiveCompositeMapBuildTimeStamp = "August 11, 2014 01:45:26 PM";
 		

@@ -69,6 +69,15 @@ uniform  sampler2D texture;
 
 
 vec2 transformSphere(in vec2 lonLat) {
+    
+    // FIXME
+    // latitude should not be larger than PI/2, otherwise artifacts appear
+    // along the upper border of maps with pole lines with inverse projection
+    // An example projection is Wagner VII. It is not clear why this happens
+    // (on Retina Macs). Similar artifact appear along the lower border, but these
+    // cannot be eliminated with a similar clamp operation.
+    lonLat.y = min(lonLat.y, PI / 2.0);
+
     vec2 sinLonLat = sin(lonLat);
 	vec2 cosLonLat = cos(lonLat);
 	float sinLon = sinLonLat.x;
@@ -302,7 +311,9 @@ vec2 invTransformedWagner(in vec2 xy) {
     // if x * x + y * y equals 4, the point is on the bounding circle of the
     // Lambert azimuthal (the limiting case). This should never happen, as
     // inverseLambertAzimuthal() should be used in this case . If it does happen,
-    // z is NaN and the following computations will return NaN coordinates.
+    // z is likely NaN and the following computations will return NaN coordinates,
+    // however this is not guaranteed as there are no strict requirements in GLSL
+    // as to NaN values.
     float z = sqrt(1. - 0.25 * l);
     float sinLat = z * xy.y / wagnerM;
     if (sinLat < -1. || sinLat > 1.) {

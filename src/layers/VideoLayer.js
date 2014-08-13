@@ -72,9 +72,6 @@ function VideoLayer(videoDOMElement) {
 		videoDOMElement.pause();
 	};
 
-	function load() {
-		
-	}
 	
 	this.load = function(m) {
 		map = m;
