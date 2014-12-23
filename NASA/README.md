@@ -6,6 +6,8 @@ Video by [NASA Goddard Space Flight Center](http://svs.gsfc.nasa.gov/goto?11719)
 22 Dec 2014
 MIT License (MIT) Copyright (c) 2014 Oregon State University Cartography and Geovisualization Group
 
-[More Information](http://cartography.oregonstate.edu/ScaleAdaptiveWebMapProjections.html)
+[Interactive map](http://cartography.oregonstate.edu/demos/AdaptiveCompositeMapProjections/NASA.html)
+
+[More Information about adaptive projections](http://cartography.oregonstate.edu/ScaleAdaptiveWebMapProjections.html)
 
 Note: Large video files are not included in this repo because of GitHub's file size limitation.
