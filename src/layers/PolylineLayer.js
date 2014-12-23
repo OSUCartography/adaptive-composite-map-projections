@@ -1,7 +1,7 @@
-function PolylineLayer(url, style, scaleVisibility) {"use strict";
+function PolylineLayer(url, style, scaleVisibility, name) {"use strict";
 
     PolylineLayer.prototype = new AbstractLayer();
-    AbstractLayer.call(this, style, scaleVisibility);
+    AbstractLayer.call(this, style, scaleVisibility, name);
 
     var layer = this;
 
@@ -696,7 +696,7 @@ function PolylineLayer(url, style, scaleVisibility) {"use strict";
         lonLimit = adjlon(lon0 + Math.PI);
 
         // a bounding box around the viewport in geographic coordinates. This is not a rectangle on the map,
-        // but a spherical rectangle sphere, surrounding the map. The east and west coordinates are relative to
+        // but a spherical quadrilateral, surrounding the map. The east and west coordinates are relative to
         // the central longitude, i.e. the horizontal origin is on lon0
         viewPortBB = layer.visibleGeographicBoundingBoxCenteredOnLon0;
 
@@ -721,15 +721,14 @@ function PolylineLayer(url, style, scaleVisibility) {"use strict";
             shp = layer.geometry[i];
             bb = shp.box;
 
-            // only project the feature if it is inside the viewport (in geographic coordinates)
+            // test whether the feature is inside the latitude range of the viewport (in geographic coordinates)
             // features may still entirely be outside the map viewport after projection
-            // test whether the feature is inside the visible latitude range
             if (bb.yMin > viewPortBB.north || bb.yMax < viewPortBB.south) {
                 // FIXME
-                //continue;
+                continue;
             }
 
-            // test whether the feature is inside the visible longitude range.
+            // test whether the feature is inside the longitude range of the viewport (in geographic coordinates).
             // to be visible, the feature's west or east border must be inside the viewport,
             // or both borders must be outside the viewport and have oposite signs.
             bbWest = adjlon(bb.xMin - lon0);
@@ -739,7 +738,7 @@ function PolylineLayer(url, style, scaleVisibility) {"use strict";
                 visible = bbWest <= 0 && bbEast >= 0;
             }
 
-            if (true /* // FIXME visible */) {
+            if (visible /* FIXME */) {
                 lineWidthScale = 1;
                 if (lineWidthScaleField !== null) {
                     // read text from feature attributes

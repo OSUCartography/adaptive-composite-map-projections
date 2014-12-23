@@ -59,10 +59,10 @@ uniform float albersN;
 uniform float albersC;
 uniform float albersRho0;
 
-// ? FIXME
+// canvas height times the map scale
 uniform vec2 scaleXY;
 
-// ? FIXME
+// half canvas width and half canvas height
 uniform vec2 dXY;
 
 uniform  sampler2D texture;

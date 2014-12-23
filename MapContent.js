@@ -29,7 +29,7 @@
  * textBaseline (vertical alignment, default is alphabetic): top, hanging, middle, alphabetic, ideographic, bottom
  */
 
-function getLayers() { "use strict";
+function getLayers(map) { "use strict";
 
     var maps = [];
     var riverStrokeColor = '#aaa';
@@ -429,7 +429,7 @@ function getLayers() { "use strict";
      * Video1
      */
     var videoElement1 = document.getElementById("video1");
-    layers = [new VideoLayer(videoElement1), new Graticule({
+    layers = [new VideoLayer(videoElement1, map), new Graticule({
         strokeStyle : '#444',
         lineWidth : 1,
         globalAlpha : 0.5
@@ -448,7 +448,7 @@ function getLayers() { "use strict";
      * Video2
      */
     var videoElement2 = document.getElementById("video2");
-    layers = [new VideoLayer(videoElement2), new Graticule({
+    layers = [new VideoLayer(videoElement2, map), new Graticule({
         strokeStyle : '#444',
         lineWidth : 1,
         globalAlpha : 0.5
@@ -467,7 +467,7 @@ function getLayers() { "use strict";
      * Video3
      */
     var videoElement3 = document.getElementById("video3");
-    layers = [new VideoLayer(videoElement3), new Graticule({
+    layers = [new VideoLayer(videoElement3, map), new Graticule({
         strokeStyle : '#444',
         lineWidth : 1,
         globalAlpha : 0.5

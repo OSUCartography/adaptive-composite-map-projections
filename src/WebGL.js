@@ -4,6 +4,20 @@ function WebGL() {
 	"use strict";
 }
 
+WebGL.hasWebGL = function() {
+	"use strict";
+	try {
+		var canvas = document.createElement('canvas');
+		return !!(window.WebGLRenderingContext && (canvas.getContext('webgl') || canvas.getContext('experimental-webgl') ) );
+	} catch(e ) {
+		return false;
+	}
+};
+
+WebGL.isPowerOfTwo = function(value) {
+	return (value & (value - 1 ) ) === 0 && value !== 0;
+};
+
 /**
  * Creates a webgl context. From webgl-utils.js
  * @param {!Canvas} canvas The canvas tag to get context from.
@@ -11,7 +25,9 @@ function WebGL() {
  */
 WebGL.create3DContext = function(canvas, opt_attribs) {
 	"use strict";
-	var context, i, names = ["webgl", "experimental-webgl", "webkit-3d", "moz-webgl"];
+	var context,
+	    i,
+	    names = ["webgl", "experimental-webgl", "webkit-3d", "moz-webgl"];
 	context = null;
 	for ( i = 0; i < names.length; i += 1) {
 		try {
@@ -29,7 +45,8 @@ WebGL.loadShader = function(gl, url) {
 	"use strict";
 
 	// http://www.khronos.org/message_boards/showthread.php/7170-How-to-include-shaders
-	var shader, req = new XMLHttpRequest();
+	var shader,
+	    req = new XMLHttpRequest();
 	req.open("GET", url, false);
 	req.send(null);
 	if (req.status !== 200/* http */ && req.status !== 0 /* local file*/) {
@@ -52,7 +69,8 @@ WebGL.loadShader = function(gl, url) {
  */
 WebGL.enableAnisotropicFiltering = function(gl, texture) {
 	"use strict";
-	var max, ext;
+	var max,
+	    ext;
 	ext = (gl.getExtension('EXT_texture_filter_anisotropic') || gl.getExtension('MOZ_EXT_texture_filter_anisotropic') || gl.getExtension('WEBKIT_EXT_texture_filter_anisotropic'));
 	if (ext !== null) {
 		max = gl.getParameter(ext.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
@@ -139,7 +157,9 @@ WebGL.addContextLostAndRestoredHandler = function(canvas, contextRestoredHandler
 
 WebGL.loadShaderProgram = function(gl, vertexShaderURL, fragmentShaderURL) {
 	"use strict";
-	var vertexShader, fragmentShader, shaderProgram;
+	var vertexShader,
+	    fragmentShader,
+	    shaderProgram;
 
 	vertexShader = WebGL.loadShader(gl, vertexShaderURL);
 	fragmentShader = WebGL.loadShader(gl, fragmentShaderURL);
@@ -185,7 +205,12 @@ WebGL.setDefaultUniforms = function(gl, program) {
 WebGL.setUniforms = function(gl, program, scale, lon0, uniforms, canvas, adaptiveGridConf) {
 	"use strict";
 
-	var viewTransform, xScale, yScale, i, geometryBBox;
+	var viewTransform,
+	    xScale,
+	    yScale,
+	    i,
+	    geometryBBox,
+	    triangleSizeRad;
 	// set default uniform values that are needed, e.g. rotation on sphere
 	WebGL.setDefaultUniforms(gl, program);
 	gl.enableVertexAttribArray(gl.getAttribLocation(program, 'vertexPosition'));
@@ -198,7 +223,13 @@ WebGL.setUniforms = function(gl, program, scale, lon0, uniforms, canvas, adaptiv
 		xScale = Math.abs(geometryBBox.east - geometryBBox.west) / 2;
 		yScale = Math.abs(geometryBBox.north - geometryBBox.south) / 2;
 		gl.uniform2fv(gl.getUniformLocation(program, 'geometryScale'), [xScale, yScale]);
+		triangleSizeRad = 2 * Math.PI / adaptiveGridConf.nbrTrianglesAlongEquator * xScale;
+	} else {
+		triangleSizeRad = 2 * Math.PI / adaptiveGridConf.nbrTrianglesAlongEquator;
 	}
+	
+	
+	gl.uniform1f(gl.getUniformLocation(program, "antimeridianStripeCellSize"), triangleSizeRad * 4);
 
 	// modelViewProjMatrix
 	viewTransform = new J3DIMatrix4();
@@ -221,27 +252,36 @@ WebGL.setUniforms = function(gl, program, scale, lon0, uniforms, canvas, adaptiv
 };
 
 /**
- * loads a tesselated sphere
+ * loads a tesselated "sphere". This is a grid in the range -1..1 along both axes with twice 
+ * as many triangles along the x axis than along the y axis.
  */
-WebGL.loadSphereGeometry = function(gl, resolution) {
+WebGL.loadSphereGeometry = function(gl, trianglesAlongEquator) {
 	"use strict";
-	var vertices, b, x, y, xIdx, yIdx, startY, stepY, idxCount, buffer, cellSize, geometry = {};
-
-	cellSize = 2 / resolution;
+	var vertices,
+	    b,
+	    x,
+	    y,
+	    xIdx,
+	    yIdx,
+	    startY,
+	    stepY,
+	    idxCount,
+	    buffer,
+	    geometry = {};
+			
 	b = {
 		startX : -1,
 		startY : -1,
-		stepX : cellSize / 2,
-		stepY : cellSize,
-		countX : Math.round(4 / cellSize),
-		countY : Math.round(2 / cellSize) + 1
+		stepX : 2 / trianglesAlongEquator,
+		stepY : 2 / (trianglesAlongEquator / 2),
+		countX : trianglesAlongEquator,
+		countY : trianglesAlongEquator / 2 + 1
 	};
 
 	vertices = new Float32Array(4 * b.countY * b.countX);
-
 	idxCount = 0;
 
-	//generation of one large triangle strip (S-Shaped), with degenerated triangles (NO IBO, just VBO!)
+	//generation of one large triangle strip (S-shaped), with degenerated triangles (NO IBO, just VBO!)
 	//compare url for vbo+ibo, http://dan.lecocq.us/wordpress/2009/12/25/triangle-strip-for-grids-a-construction/
 	for ( xIdx = 0; xIdx < b.countX; xIdx += 1) {
 		x = b.startX + xIdx * b.stepX;
@@ -257,10 +297,13 @@ WebGL.loadSphereGeometry = function(gl, resolution) {
 		}
 
 		for ( yIdx = 0; yIdx < b.countY; yIdx += 1) {
-			y = startY + stepY * yIdx;
+			y = b.startY + b.stepY * yIdx;
 			vertices.set([x, y, x + b.stepX, y], 4 * idxCount);
 			idxCount += 1;
 		}
+		
+		b.startY *= -1;
+		b.stepY *= -1;
 	}
 
 	buffer = gl.createBuffer();
@@ -269,7 +312,6 @@ WebGL.loadSphereGeometry = function(gl, resolution) {
 
 	geometry.buffer = buffer;
 	geometry.vertexCount = vertices.length / 2;
-	geometry.cellSize = cellSize;
 
 	return geometry;
 };
@@ -279,7 +321,9 @@ WebGL.loadSphereGeometry = function(gl, resolution) {
  */
 WebGL.loadRectangleGeometry = function(gl) {
 	"use strict";
-	var vertices, buffer, geometry = {};
+	var vertices,
+	    buffer,
+	    geometry = {};
 
 	buffer = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -303,7 +347,10 @@ WebGL.deleteGeometry = function(gl, geometry) {
 // http://www.khronos.org/webgl/wiki/WebGL_and_OpenGL_Differences
 WebGL.scaleTextureImage = function(gl, image) {
 	"use strict";
-	var canvas, maxSize, w = image.width, h = image.height;
+	var canvas,
+	    maxSize,
+	    w = image.width,
+	    h = image.height;
 
 	maxSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
 
@@ -346,8 +393,9 @@ WebGL.scaleTextureImage = function(gl, image) {
 // also should store a reference to the loaded image somewhere to avoid reloading it multiple times.
 WebGL.loadStaticTexture = function(gl, url, map, texture) {
 	"use strict";
-	var useMipMap = map.isMipMap(), image = new Image();
-	
+	var useMipMap = map.isMipMap(),
+	    image = new Image();
+
 	// FIXME
 	texture.imageLoaded = false;
 	image.onload = function() {
@@ -361,6 +409,7 @@ WebGL.loadStaticTexture = function(gl, url, map, texture) {
 		gl.bindTexture(gl.TEXTURE_2D, texture);
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 
+		// repeat mode is required for inverse projection
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 		// mip maps are only available for power of two dimensions
@@ -369,7 +418,7 @@ WebGL.loadStaticTexture = function(gl, url, map, texture) {
 		if (useMipMap) {
 			gl.generateMipmap(gl.TEXTURE_2D);
 		}
-		
+
 		texture.imageLoaded = true;
 		map.render();
 	};
@@ -390,9 +439,6 @@ WebGL.draw = function(gl, drawMode, scale, lon0, uniforms, canvas, geometry, sha
 	gl.clear(gl.COLOR_BUFFER_BIT);
 	gl.useProgram(shaderProgram);
 	WebGL.setUniforms(gl, shaderProgram, scale, lon0, uniforms, canvas, adaptiveGridConf);
-
-	gl.uniform1f(gl.getUniformLocation(shaderProgram, "antimeridianStripeCellSize"), geometry.cellSize * Math.PI);
-
 	gl.bindBuffer(gl.ARRAY_BUFFER, geometry.buffer);
 	vertexPositionAttribute = gl.getAttribLocation(shaderProgram, 'vertexPosition');
 	gl.vertexAttribPointer(vertexPositionAttribute, 2, gl.FLOAT, false, 0, 0);

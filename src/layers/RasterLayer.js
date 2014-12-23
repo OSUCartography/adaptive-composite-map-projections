@@ -26,7 +26,8 @@ function RasterLayer(url) {
 			useAdaptiveResolutionGrid : map.isAdaptiveResolutionGrid(),
 			geometryBBox : this.visibleGeometryBoundingBoxCenteredOnLon0,
 			mapScale : map.getZoomFactor(),
-			startScaleLimit : map.conf.zoomLimit2
+			startScaleLimit : map.conf.zoomLimit2,
+			nbrTrianglesAlongEquator : map.getNumberOfTrianglesAlongEquator()
 		};
 		scale = this.mapScale / this.refScaleFactor * this.glScale;
 		if (map.isForwardRasterProjection()) {
@@ -60,7 +61,7 @@ function RasterLayer(url) {
 		shaderProgram = WebGL.loadShaderProgram(gl, vertexShaderName, fragmentShaderName);
 		texture = gl.createTexture();
 		if (map.isForwardRasterProjection()) {
-			geometry = WebGL.loadSphereGeometry(gl, map.getGeometryResolution());
+			geometry = WebGL.loadSphereGeometry(gl, map.getNumberOfTrianglesAlongEquator());
 		} else {
 			geometry = WebGL.loadRectangleGeometry(gl);
 		}
@@ -81,13 +82,11 @@ function RasterLayer(url) {
 		loadData(gl);
 	};
 
-	this.adjustTesselationDensity = function() {
-		if (map.isForwardRasterProjection()) {
-			geometry = WebGL.loadSphereGeometry(gl, map.getGeometryResolution());
-		}
+	this.reloadGeometry = function() {
+		geometry = WebGL.loadSphereGeometry(gl, map.getNumberOfTrianglesAlongEquator());
 	};
 	
-	this.reloadGeometry = function() {
+	this.reloadData = function() {
 		this.clear();
 		loadData(gl);
 	};

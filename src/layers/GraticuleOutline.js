@@ -6,7 +6,7 @@ function GraticuleOutline(style) {"use strict";
     
     var HALF_PI = Math.PI / 2;
     
-    AbstractLayer.call(this, style);
+    AbstractLayer.call(this, style, "graticuleOutline");
 
     /**
      * Returns whether a point in Cartesian coordinates is inside the graticule border.

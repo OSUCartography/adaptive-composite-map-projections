@@ -237,9 +237,11 @@ function shapefileReader(url, layerLoadCallback) {
 	new BinaryAjax(url + '.dbf', onDbfComplete, onDbfFail);
 }
 
-function AbstractLayer(style, scaleVisibility) {"use strict";
+function AbstractLayer(style, scaleVisibility, name) {"use strict";
 
 	this.style = style;
+	this.name = name;
+	this.visible = true;
 
 	// interpolated scale-dependent line width. Use instead of this.style.lineWidth
 	this.lineWidth = null;
@@ -279,6 +281,9 @@ function AbstractLayer(style, scaleVisibility) {"use strict";
 	};
 
 	this.isVisible = function() {
+		if (typeof this.visible !== 'undefined' && this.visible === false) {
+			return false;
+		}
 		if ( scaleVisibility instanceof Object === false) {
 			return true;
 		}

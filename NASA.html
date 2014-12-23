@@ -1,0 +1,405 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<!-- expires immediately while developing -->
+		<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+		<meta http-equiv="Pragma" content="no-cache" />
+		<meta http-equiv="Expires" content="0" />
+
+		<meta charset="utf-8" />
+
+		<link rel="icon" href="http://cartography.oregonstate.edu/favicon.ico"  type="image/x-icon" />
+		<link rel="shortcut icon" href="http://cartography.oregonstate.edu/favicon.ico" type="image/x-icon" />
+		<link rel="apple-touch-icon" href= "http://cartography.oregonstate.edu/apple-touch-icon.png" />
+
+		<!-- stop doubletap from zooming, and let the multitouch gestures work with Hammer.js. -->
+		<meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1" />
+
+		<title>NASA: A Year In The Life Of Earth's CO2</title>
+
+		<!--Google font directory CSS link to embed the font-->
+		<link href='http://fonts.googleapis.com/css?family=Open+Sans:400italic,400,300,600&subset=latin' rel='stylesheet' type='text/css'>
+		<!-- Font Awesome -->
+		<link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+
+		<script type="text/javascript" src="lib/hammer.min.js"></script>
+		<script type="text/javascript" src="lib/modestmaps/modestmaps.js"></script>
+		<script type="text/javascript" src="lib/wax.mm.min.js"></script>
+		<script type="text/javascript" src="lib/stats.min.js"></script>
+
+		<script type="text/javascript" src="NASA/AdaptiveCompositeMap.js"></script>
+		<script type="text/javascript" src="NASA/MapContent.js"></script>
+
+		<!-- jQuery CDN-->
+		<!--
+		<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css" />
+		<script src="http://code.jquery.com/jquery-2.1.0.js"></script>
+		<script src="http://code.jquery.com/ui/1.10.4/jquery-ui.js"></script>-->
+
+		<!-- jQuery local-->
+		<link rel="stylesheet" href="lib/jquery/ui/1.10.4/themes/smoothness/jquery-ui.css" />
+		<script src="lib/jquery/jquery-2.1.0.js"></script>
+		<script src="lib/jquery/ui/1.10.4/jquery-ui.js"></script>
+		<!--
+		<link rel="stylesheet" type="text/css" href="NASA/jui_dropdown/jquery.jui_dropdown.css">
+		<script type="text/javascript" src="NASA/jui_dropdown/jquery.jui_dropdown.min.js"></script>
+		-->
+
+		<!-- Twitter Bootstrap -->
+		<link rel="stylesheet" href="NASA/bootstrap.min.css" type="text/css"/>
+		<script type="text/javascript" src="NASA/bootstrap.min.js"></script>
+		<script type="text/javascript" src="NASA/bootstrap-multiselect.js"></script>
+		<link rel="stylesheet" href="NASA/bootstrap-multiselect.css" type="text/css"/>
+
+		<!-- WebGL utilities -->
+		<script type="text/javascript" src="lib/J3DI.js"></script>
+		<script type="text/javascript" src="lib/J3DIMath.js"></script>
+
+		<!-- WebGL debugging -->
+		<!--
+		<script type="text/javascript" src="http://benvanik.github.com/WebGL-Inspector/core/embed.js"></script>
+		<script src="https://www.khronos.org/registry/webgl/sdk/debug/webgl-debug.js"></script>
+		-->
+
+		<link rel="stylesheet" href="NASA/NASA.css">
+		<script type="text/javascript" src="NASA/UI.js"></script>
+		<script src="NASA/jquery.knob.js"></script>
+
+	</head>
+	<body>
+		<div id="failContainer">
+			<h1>NASA: A Year In The Life Of Earth's CO<sub>2</sub></h1>
+			<p>
+				This interactive map is unfortunately not available on your device, because HTML5 Video, WebGL or support for large video textures are
+				not available. Please see the original version of the <a href="http://svs.gsfc.nasa.gov/goto?11719">carbon dioxide map</a>
+				at the NASA Goddard Space Flight Center website.
+			</p>
+			<a href="http://svs.gsfc.nasa.gov/goto?11719 "><img src="NASA/still.png" alt="Map preview"></a>
+		</div>
+		<div id="container">
+			<div id="spinningWheelContainer" class="panel">
+				<p>
+					<i id="spinningWheel" class="fa fa-circle-o-notch fa-spin"></i>
+				</p>
+			</div>
+
+			<div id="infoContainer" class="panel">
+				<p class="mouse">
+					Click and drag to adjust the center of the map.
+				</p>
+				<p class="mouse">
+					Use the scroll wheel or the slider to zoom in and out.
+				</p>
+				<p class="mouse">
+					Double-click the map to zoom in.
+				</p>
+				<p>
+					<i id="closeInfoButton" class="fa fa-times" title="close"></i>
+				</p>
+				<p class="mouse">
+					This map shows all areas with correct relative size.
+				</p>
+				<p id="osu">
+					Interactive map by the <a href="http://cartography.oregonstate.edu/">Cartography and Geovisualization Group</a>, Oregon State University
+					<br/>
+					Video by <a href="http://svs.gsfc.nasa.gov/goto?11719">NASA Goddard Space Flight Center</a>
+					<br/>
+					&copy; 22 Dec 2014
+				</p>
+
+			</div>
+
+			<div id="map-and-zoom-slider">
+				<div id="zoom-Slider-Container">
+					<div id="zoom-slider" title="Map zoom"></div>
+					<div id="infoButtonContainer">
+						<i id="infoButton" class="fa fa-info fa-fw" title="Map navigation and info about this map"></i>
+					</div>
+					<div id="mapLayersButtonContainer" title="Show and hide map layers">
+						<select id="mapLayers" multiple="multiple">
+							<optgroup label="Map Layers">
+								<option value="land" selected="selected" title="">Coast & Lakes</option>
+								<option value="countries" selected="selected" title="">Countries</option>
+							</optgroup>
+							<optgroup label="Video Resolution">
+								<option value="xhigh" title="2048&times;1024">Very High</option>
+								<option value="high" title="1024&times;512"selected="selected">High</option>
+								<option value="medium" title="512&times;256">Medium</option>
+								<option value="low" title="256&times;128">Low</option>
+							</optgroup>
+						</select>
+					</div>
+
+				</div>
+				<div class="map" id="adaptiveMap"></div>
+			</div>
+
+			<div id="headerContainer">
+				<h1>NASA: A Year In The Life Of Earth's CO<sub>2</sub></h1>
+				<p id="subtitle">
+					An interactive version of the <a href="http://svs.gsfc.nasa.gov/goto?11719">carbon dioxide map by  NASA's Goddard Space Flight Center</a>.
+				</p>
+
+				<div id="controlContainer">
+					<div id="dateContainer">
+						<span id="day"></span>
+						<br>
+						<span id="month"></span>
+						<br>
+						<span id="year"></span>
+					</div>
+					<div id="dialContainer">
+						<input id="dial" class="knob" data-displayInput="false" data-width="120" data-min="1" data-max="365" data-fgColor="#DA5520" data-skin="tron" data-thickness=".15" value="1">
+					</div>
+					<div id="videoControls">
+						<i id="pausePlayButton" class="fa fa-pause fa-fw" title="Play or pause video"></i>
+						<i id="volumeToggle" class="fa fa-volume-up fa-fw" title="Volume on and off"></i>
+					</div>
+				</div>
+
+			</div>
+
+			<div id ="legendContainer">
+				<div class="legend">
+					<p>
+						Carbon Dioxide Column Concentration <span class="units" title="parts per million by volume">(ppmv)</span>
+					</p>
+					<svg version="1.0" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="424.5px" height="40.833px" viewBox="0 0 424.5 40.833" style="enable-background:new 0 0 424.5 40.833;" xml:space="preserve">
+						<g id="color" class="colorRamp">
+
+							<image style="overflow:visible;" width="521" height="11" xlink:href="data:image/jpeg;base64,/9j/4QAYRXhpZgAASUkqAAgAAAAAAAAAAAAAAP/sABFEdWNreQABAAQAAABQAAD/4QMtaHR0cDov
+							L25zLmFkb2JlLmNvbS94YXAvMS4wLwA8P3hwYWNrZXQgYmVnaW49Iu+7vyIgaWQ9Ilc1TTBNcENl
+							aGlIenJlU3pOVGN6a2M5ZCI/PiA8eDp4bXBtZXRhIHhtbG5zOng9ImFkb2JlOm5zOm1ldGEvIiB4
+							OnhtcHRrPSJBZG9iZSBYTVAgQ29yZSA1LjMtYzAxMSA2Ni4xNDU2NjEsIDIwMTIvMDIvMDYtMTQ6
+							NTY6MjcgICAgICAgICI+IDxyZGY6UkRGIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5
+							OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+IDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PSIiIHht
+							bG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIgeG1sbnM6eG1wTU09Imh0dHA6
+							Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUu
+							Y29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bXA6Q3JlYXRvclRvb2w9IkFkb2JlIFBo
+							b3Rvc2hvcCBDUzYgKE1hY2ludG9zaCkiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6NzdERkMy
+							RDU2RUVFMTFFNDk1QjhEOEZBQjE0Q0VDMUEiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6NzdE
+							RkMyRDY2RUVFMTFFNDk1QjhEOEZBQjE0Q0VDMUEiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6
+							aW5zdGFuY2VJRD0ieG1wLmlpZDoyRDdGODEwMDZFRUIxMUU0OTVCOEQ4RkFCMTRDRUMxQSIgc3RS
+							ZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo3N0RGQzJENDZFRUUxMUU0OTVCOEQ4RkFCMTRDRUMxQSIv
+							PiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVu
+							ZD0iciI/Pv/uACZBZG9iZQBkwAAAAAEDABUEAwYKDQAABoUAAAamAAAHdQAACG7/2wCEAAICAgIC
+							AgICAgIDAgICAwQDAgIDBAUEBAQEBAUGBQUFBQUFBgYHBwgHBwYJCQoKCQkMDAwMDAwMDAwMDAwM
+							DAwBAwMDBQQFCQYGCQ0LCQsNDw4ODg4PDwwMDAwMDw8MDAwMDAwPDAwMDAwMDAwMDAwMDAwMDAwM
+							DAwMDAwMDAwMDP/CABEIAAsCCQMBEQACEQEDEQH/xACNAAEBAAMBAQEAAAAAAAAAAAAFBAIDBgAB
+							CAEAAgMBAQAAAAAAAAAAAAAAAAQBAgMFBhABAQEBAQEBAQEAAAAAAAAAAAIBAxAgQDBQEQEAAAAA
+							AAAAAAAAAAAAAABwEgEAAAAAAAAAAAAAAAAAAABwEwACAgMBAQEBAAAAAAAAAAAAATFBECAwIUAR
+							Uf/aAAwDAQACEQMRAAAB/KIag+B8k9pHmIzYN+1Lb5JGCtV2qruZLsr5Jp2S5+qHKZQ4jiPBer5b
+							+ObsGr5THQHZ6AjXRDbcIbIHEonefO2poYx0tZTN4zuZZb5X3yVnNgq0VaKulXoOgg6Gp0VTpCOg
+							qJVMyddp0TeW15Z0inWGdoo2hjaGNIS0EWPixtZNzDaTDU1B+V8PA6A8GMntI8wZsRv2pbfJKcFq
+							rtUXcyXYXyUUsjztUeUyhxXUOA9Xy3sc3YNnymHx2eiI10Am3CWiBxON3nzNqaWMNDWUzmWhvL7v
+							jffJWaMFGSrcw4VeiOgqdFU6KDo4OggTqZk6ptom01ryTpFOsU7QxtFG0EaQloYsfFjaybmG0IYn
+							VB//2gAIAQEAAQUC37xKUOaEJSlKWNUtbotSmt81vmJQhDm5ubm5uTk5s91rVKUpSlKUpTfN+8Sl
+							Dm5oSlKU+apa3RalNb5rfMShCHNzc3NycnJzZ7rWqUpSlKUpSm+f/9oACAECAAEFAvjGM+9Upbo6
+							N8xjGMYxjGMYz/FxjPvVKW6OjfMYxjGMYxjGM/wf/9oACAEDAAEFAv461rfcYxKUpSlLGqU39Ofl
+							1rW+4xKUpSlKWNUpv6c/p//aAAgBAgIGPwIE/9oACAEDAgY/AgT/2gAIAQEBBj8CBP/aAAgBAQMB
+							PyHYtbp0sM8li+tPK9VqUGgqVKlChQbDeDjjDaBhs7656rS0KFN0ForlttPK9FXGhQoVKFCmg/hY
+							D/8A/9oACAECAwE/IdwtGPhRXYfOvrY+YWjH81EfOvsen//aAAgBAwMBPyHdj2BfAwQGMYxjH2Qh
+							CwQhfAx7AvgQIDGMYxj7IQhYIQuP/9oADAMBAAIRAxEAABAQR1EvxPN8y7fLGjBjJ5ZoDF/FUSJI
+							8xrQQRxbAtcNjbwy3kx2CvfiXu+kzE+5aoBUb//aAAgBAQMBPxCQ3+YbP0TGG9Q8DwNAweB4GgaC
+							o8DwN4N4x5HnAYP6G9Y0jSMOPJYmP6P6h4GgcNhGDhwwYN4PJDeJyQmJCQaRpGkkJhpGkkGkb1n7
+							hLP9ETJE0TWkEUUKlSpQiRZcvkpskyxYtnsTJImiuCvAqQgiKHGNyxYsWLYWLFixcsWJY//aAAgB
+							AgMBPxDK1RDHujcsT0K9B6rZjGPDGsIQhCy9Hkey1RDHujckyQu7Hqt2MeGPCEIQsPRjHg8//9oA
+							CAEDAwE/ENnus9Au4zjeEB+T8YxjP3dIXEWQha/m73yfQAsCHP8A5jGPghcRZCELX//Z" transform="matrix(0.7692 0 0 1.9805 14.6152 0.2231)"></image>
+						</g>
+						<g id="type">
+							<text transform="matrix(1 0 0 1 3.167 40.3335)" class="legendLabel">
+								377
+							</text>
+							<text transform="matrix(1 0 0 1 44.5005 40.3335)" class="legendLabel">
+								379
+							</text>
+							<text transform="matrix(1 0 0 1 87.5005 40.3335)" class="legendLabel">
+								381
+							</text>
+							<text transform="matrix(1 0 0 1 134.5005 40.3335)" class="legendLabel">
+								383
+							</text>
+							<text transform="matrix(1 0 0 1 178.834 40.3335)" class="legendLabel">
+								385
+							</text>
+							<text transform="matrix(1 0 0 1 223.834 40.3335)" class="legendLabel">
+								387
+							</text>
+							<text transform="matrix(1 0 0 1 268.1675 40.3335)" class="legendLabel">
+								389
+							</text>
+							<text transform="matrix(1 0 0 1 312.501 40.3335)" class="legendLabel">
+								391
+							</text>
+							<text transform="matrix(1 0 0 1 357.501 40.3335)" class="legendLabel">
+								393
+							</text>
+							<text transform="matrix(1 0 0 1 402.167 40.3335)" class="legendLabel">
+								395
+							</text>
+						</g>
+					</svg>
+				</div>
+				<div id="monoxideLegend" class="legend">
+					<p>
+						Carbon Monoxide Column Abundance <span class="units">(1.0e18 molec cm<sup>-2</sup>)</span>
+					</p>
+					<svg version="1.0" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="424.5px" height="40.833px" viewBox="0 0 424.5 40.833" style="enable-background:new 0 0 424.5 40.833;" xml:space="preserve">
+						<g id="color" class="colorRamp">
+
+							<image style="overflow:visible;" width="521" height="11" xlink:href="data:image/jpeg;base64,/9j/4QAYRXhpZgAASUkqAAgAAAAAAAAAAAAAAP/sABFEdWNreQABAAQAAABQAAD/4QMtaHR0cDov
+							L25zLmFkb2JlLmNvbS94YXAvMS4wLwA8P3hwYWNrZXQgYmVnaW49Iu+7vyIgaWQ9Ilc1TTBNcENl
+							aGlIenJlU3pOVGN6a2M5ZCI/PiA8eDp4bXBtZXRhIHhtbG5zOng9ImFkb2JlOm5zOm1ldGEvIiB4
+							OnhtcHRrPSJBZG9iZSBYTVAgQ29yZSA1LjMtYzAxMSA2Ni4xNDU2NjEsIDIwMTIvMDIvMDYtMTQ6
+							NTY6MjcgICAgICAgICI+IDxyZGY6UkRGIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5
+							OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+IDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PSIiIHht
+							bG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIgeG1sbnM6eG1wTU09Imh0dHA6
+							Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUu
+							Y29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bXA6Q3JlYXRvclRvb2w9IkFkb2JlIFBo
+							b3Rvc2hvcCBDUzYgKE1hY2ludG9zaCkiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6NzdERkMy
+							RDk2RUVFMTFFNDk1QjhEOEZBQjE0Q0VDMUEiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6NzdE
+							RkMyREE2RUVFMTFFNDk1QjhEOEZBQjE0Q0VDMUEiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6
+							aW5zdGFuY2VJRD0ieG1wLmlpZDo3N0RGQzJENzZFRUUxMUU0OTVCOEQ4RkFCMTRDRUMxQSIgc3RS
+							ZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo3N0RGQzJEODZFRUUxMUU0OTVCOEQ4RkFCMTRDRUMxQSIv
+							PiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVu
+							ZD0iciI/Pv/uACZBZG9iZQBkwAAAAAEDABUEAwYKDQAABXoAAAWbAAAGKAAABsf/2wCEAAICAgIC
+							AgICAgIDAgICAwQDAgIDBAUEBAQEBAUGBQUFBQUFBgYHBwgHBwYJCQoKCQkMDAwMDAwMDAwMDAwM
+							DAwBAwMDBQQFCQYGCQ0LCQsNDw4ODg4PDwwMDAwMDw8MDAwMDAwPDAwMDAwMDAwMDAwMDAwMDAwM
+							DAwMDAwMDAwMDP/CABEIAAsCCQMBEQACEQEDEQH/xACIAAEBAAMBAQAAAAAAAAAAAAAEAwABAggJ
+							AQEAAAAAAAAAAAAAAAAAAAAAEAEBAQEBAAAAAAAAAAAAAAABABBAcBEBAAAAAAAAAAAAAAAAAAAA
+							cBIBAAAAAAAAAAAAAAAAAAAAcBMAAgMAAQMDBQAAAAAAAAAAAAEQMUERcFHBIDBxQFCBkbH/2gAM
+							AwEAAhEDEQAAAfJxM0YYYbNmzZ2dnR2dnZQoUKlSpQsVLFy5UsXEFhAgQILiRAgQJEihIoSKFCxQ
+							oWLFixYsYMGCxgoofFImYYYYYbNmzs7Ozo7KFChQoVKlSpYsWLFiwguWLiRAgQIECRAkSJEihQoU
+							KFChQsWMFCxgwYMFiyh//9oACAEBAAEFAukjSIiIiIiIiIiIiIiIiIiIiIiI6TCNIiIiIiIiIiIi
+							IiIiIiIiIiIjP//aAAgBAgABBQLwT//aAAgBAwABBQLwT//aAAgBAgIGPwIE/9oACAEDAgY/AgT/
+							2gAIAQEBBj8CBP/aAAgBAQMBPyF+0pQhCEIQhCEKRC+qAAE/vFxxxxxxx4cj9pehCEIQhCFBSIX2
+							YAAD/wD+/9oACAECAwE/Iegn/9oACAEDAwE/Iegn/9oADAMBAAIRAxEAABAAAAAQCASSQCCSCSCC
+							QQCSQQSQCACACCQAQAAQSQSQCSQACQQCQQAAAAQAAAQQSSAQD//aAAgBAQMBPxBxvg5fc5fc5fc5
+							fcT7wn3E/wBQTpiuGDB/ErjjjjjjDDjjDUMMPQ9DDDj0OOPQ49DUOONQ1DUNQ1DUNRQPRQUFBUVF
+							RUUDnwi79SpQqLCoVoVmPk8jRo8p/IzDP4hiekKQzZkxZkyZMzZKozHJgwYMGDEMGDBizBkyZMmT
+							Mf/aAAgBAgMBPxDoJ//aAAgBAwMBPxDoJ//Z" transform="matrix(0.7692 0 0 1.9805 14.6152 0)"></image>
+						</g>
+						<g id="type">
+							<text transform="matrix(1 0 0 1 3.167 40.1108)" class="legendLabel">
+								0.0
+							</text>
+							<text transform="matrix(1 0 0 1 43.167 40.1108)" class="legendLabel">
+								0.6
+							</text>
+							<text transform="matrix(1 0 0 1 83.167 40.1108)" class="legendLabel">
+								1.2
+							</text>
+							<text transform="matrix(1 0 0 1 123.167 40.1108)" class="legendLabel">
+								1.8
+							</text>
+							<text transform="matrix(1 0 0 1 163.167 40.1108)" class="legendLabel">
+								2.4
+							</text>
+							<text transform="matrix(1 0 0 1 208.2412 40.1108)" class="legendLabel">
+								3
+							</text>
+							<text transform="matrix(1 0 0 1 243.167 40.1108)" class="legendLabel">
+								3.6
+							</text>
+							<text transform="matrix(1 0 0 1 283.166 40.1108)" class="legendLabel">
+								4.2
+							</text>
+							<text transform="matrix(1 0 0 1 323.166 40.1108)" class="legendLabel">
+								4.8
+							</text>
+							<text transform="matrix(1 0 0 1 363.166 40.1108)" class="legendLabel">
+								5.4
+							</text>
+							<text transform="matrix(1 0 0 1 403.166 40.1108)" class="legendLabel">
+								6.0
+							</text>
+						</g>
+					</svg>
+				</div>
+			</div>
+
+			<video id="video1" class="video" preload="auto" autoplay >
+				<source id="videoSourceMP4" src="NASA/1024x512.mp4" type="video/mp4"/>
+				<source id="videoSourceWEBM" src="NASA/1024x512.webm" type="video/webm"/>
+				Your browser does not support HTML5 video. Please use recent version of Firefox or Google Chrome.
+			</video>
+
+		</div><!-- container -->
+
+		<div id ="logoContainer" title="Website of the Cartography and Geovisualization Group at Oregon State University">
+			<a href="http://cartography.oregonstate.edu/">
+			<svg id="cartoGroupLogo" version="1.0" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+			width="65px" height="65px" viewBox="0 0 72 72" style="enable-background:new 0 0 72 72;" xml:space="preserve">
+				<g>
+					<defs>
+						<rect id="SVGID_1_" y="0" width="72" height="72"/>
+					</defs>
+					<clipPath id="SVGID_2_">
+						<use xlink:href="#SVGID_1_"  style="overflow:visible;"/>
+					</clipPath>
+					<circle id="logoBackground" cx="36" cy="36" r="36" fill="black"
+					opacity="0.75"/>
+					<path style="clip-path:url(#SVGID_2_);fill:#BCBEC0;" d="M24.385,9.992c1.604-0.146,3.02,1.035,3.166,2.638
+					c0.148,1.6-1.031,3.018-2.633,3.166c-1.601,0.147-3.021-1.034-3.17-2.636C21.602,11.559,22.781,10.14,24.385,9.992"/>
+					<path style="clip-path:url(#SVGID_2_);fill:none;stroke:#BCBEC0;stroke-width:0.254;stroke-miterlimit:10;" d="M24.385,9.992
+					c1.604-0.146,3.02,1.035,3.166,2.638c0.148,1.6-1.031,3.018-2.633,3.166c-1.601,0.147-3.021-1.034-3.17-2.636
+					C21.602,11.559,22.781,10.14,24.385,9.992z"/>
+					<path style="clip-path:url(#SVGID_2_);fill:#F37321;" d="M14.486,18.758c2.047-0.188,3.852,1.313,4.041,3.361
+					c0.186,2.044-1.316,3.851-3.361,4.04c-2.043,0.188-3.85-1.317-4.037-3.361C10.939,20.753,12.443,18.947,14.486,18.758"/>
+					<path style="clip-path:url(#SVGID_2_);fill:none;stroke:#F37321;stroke-width:0.254;stroke-miterlimit:10;" d="M14.486,18.758
+					c2.047-0.188,3.852,1.313,4.041,3.361c0.186,2.044-1.316,3.851-3.361,4.04c-2.043,0.188-3.85-1.317-4.037-3.361
+					C10.939,20.753,12.443,18.947,14.486,18.758z"/>
+					<path style="clip-path:url(#SVGID_2_);fill:#BCBEC0;" d="M9.715,33.422c1.434-0.132,2.697,0.92,2.83,2.352
+					c0.129,1.429-0.92,2.696-2.355,2.826c-1.428,0.132-2.696-0.919-2.829-2.351C7.233,34.817,8.285,33.553,9.715,33.422"/>
+					<path style="clip-path:url(#SVGID_2_);fill:none;stroke:#BCBEC0;stroke-width:0.254;stroke-miterlimit:10;" d="M9.715,33.422
+					c1.434-0.132,2.697,0.92,2.83,2.352c0.129,1.429-0.92,2.696-2.355,2.826c-1.428,0.132-2.696-0.919-2.829-2.351
+					C7.233,34.817,8.285,33.553,9.715,33.422z"/>
+					<path style="clip-path:url(#SVGID_2_);fill:#BCBEC0;" d="M12.117,46.602c0.912-0.137,1.764,0.49,1.898,1.4
+					c0.137,0.917-0.492,1.768-1.404,1.903c-0.912,0.135-1.762-0.492-1.898-1.407C10.576,47.589,11.205,46.738,12.117,46.602"/>
+					<path style="clip-path:url(#SVGID_2_);fill:none;stroke:#BCBEC0;stroke-width:0.325;stroke-miterlimit:10;" d="M12.117,46.602
+					c0.912-0.137,1.764,0.49,1.898,1.4c0.137,0.917-0.492,1.768-1.404,1.903c-0.912,0.135-1.762-0.492-1.898-1.407
+					C10.576,47.589,11.205,46.738,12.117,46.602z"/>
+					<path style="clip-path:url(#SVGID_2_);fill:#BCBEC0;" d="M35.815,7.867c0.912-0.137,1.762,0.492,1.896,1.406
+					c0.14,0.91-0.491,1.762-1.399,1.897c-0.914,0.136-1.764-0.492-1.9-1.405C34.274,8.854,34.903,8.004,35.815,7.867"/>
+					<path style="clip-path:url(#SVGID_2_);fill:none;stroke:#BCBEC0;stroke-width:0.325;stroke-miterlimit:10;" d="M35.815,7.867
+					c0.912-0.137,1.762,0.492,1.896,1.406c0.14,0.91-0.491,1.762-1.399,1.897c-0.914,0.136-1.764-0.492-1.9-1.405
+					C34.274,8.854,34.903,8.004,35.815,7.867z"/>
+				</g>
+				<g style="fill:white;">
+					<set attributeName="fill" to="#F37321" begin="logoBackground.mouseover" end="logoBackground.mouseout"/>
+					<path d="M27.273,38.444c-0.576,0.24-1.312,0.352-2.129,0.352c-3.265,0-4.833-2.369-4.833-5.506
+					c0-3.425,2.145-5.506,4.786-5.506c0.944,0,1.729,0.208,2.129,0.4l-0.096,1.681c-0.4-0.32-1.168-0.512-1.873-0.512
+					c-1.953,0-2.929,1.792-2.929,3.954c0,2.129,1.041,3.906,2.913,3.906c0.849,0,1.312-0.129,1.937-0.433L27.273,38.444z"/>
+					<path d="M29.366,38.62l3.377-10.676h2.208l3.361,10.676h-2.032l-0.721-2.609h-3.505l-0.72,2.609H29.366z
+					M32.391,34.586h2.801l-1.409-4.978L32.391,34.586z"/>
+					<path d="M41.271,38.62V27.943h3.394c1.712,0,3.121,0.96,3.121,2.753c0,1.393-0.753,2.337-2.113,2.593
+					c0.704,0.176,0.992,0.544,1.297,1.424l1.328,3.906h-2.081l-1.024-3.329c-0.256-0.816-0.527-1.201-1.185-1.201h-0.8v4.53H41.271z
+					M43.191,32.585h0.944c1.088,0,1.648-0.592,1.648-1.616c0-1.073-0.656-1.537-1.681-1.537h-0.912V32.585z"/>
+					<path d="M52.807,38.62v-9.092h-2.321v-1.584h6.595v1.584h-2.321v9.092H52.807z"/>
+					<path d="M59.271,33.29c0-2.625,1.104-5.506,4.13-5.506c3.249,0,4.161,2.865,4.161,5.506
+					c0,2.673-1.104,5.506-4.161,5.506c-0.801,0-1.473-0.16-2.001-0.479C59.83,37.323,59.271,35.354,59.271,33.29z M63.4,37.323
+					c1.904,0,2.128-2.4,2.128-4.033c0-1.681-0.208-4.034-2.128-4.034c-1.841,0-2.113,2.385-2.113,4.034c0,0.944,0.08,1.953,0.384,2.721
+					C61.991,36.779,62.52,37.323,63.4,37.323z"/>
+
+				</g>
+				<g style="fill:#BCBEC0;" >
+
+					<path d="M26.7,52.683c-0.714,0.378-1.597,0.519-2.381,0.519c-2.843,0-4.076-2.241-4.076-4.818
+					c0-2.521,1.471-4.819,4.188-4.819c0.784,0,1.471,0.183,2.073,0.448l-0.084,1.205c-0.546-0.351-1.247-0.574-1.975-0.574
+					c-2.003,0-2.858,1.919-2.858,3.74c0,1.835,0.771,3.739,2.844,3.739c0.378,0,0.714-0.069,1.051-0.252v-2.899h-1.457v-1.022H26.7
+					V52.683z"/>
+					<path d="M30.042,53.047v-9.343h2.591c1.485,0,2.591,0.882,2.591,2.409c0,1.219-0.645,2.045-1.835,2.27
+					c0.574,0.111,0.827,0.42,1.051,1.05l1.289,3.614h-1.387l-1.022-3.054c-0.224-0.672-0.448-1.093-1.107-1.093h-0.882v4.146H30.042z
+					M31.317,47.85h0.98c1.065,0,1.597-0.574,1.597-1.597c0-1.05-0.63-1.499-1.639-1.499h-0.938V47.85z"/>
+					<path d="M38.162,48.383c0-2.199,0.854-4.819,3.432-4.819c2.76,0,3.46,2.592,3.46,4.819
+					c0,2.227-0.826,4.818-3.46,4.818c-0.686,0-1.246-0.141-1.694-0.435C38.582,51.899,38.162,50.106,38.162,48.383z M41.594,52.151
+					c1.85,0,2.102-2.27,2.102-3.768c0-1.541-0.21-3.769-2.102-3.769c-1.807,0-2.087,2.27-2.087,3.769c0,0.826,0.084,1.765,0.364,2.507
+					C40.165,51.619,40.697,52.151,41.594,52.151z"/>
+					<path d="M49.461,49.784c0,1.162,0.168,2.354,1.625,2.354c1.4,0,1.639-1.191,1.639-2.354v-6.079h1.303v5.953
+					c0,1.947-0.771,3.544-2.941,3.544c-2.241,0-2.928-1.527-2.928-3.544v-5.953h1.303V49.784z"/>
+					<path d="M57.566,53.047v-9.343h2.185c1.779,0,2.984,0.882,2.984,2.745c0,1.751-1.093,2.76-2.815,2.76h-1.065
+					v3.838H57.566z M58.841,48.159h0.812c1.177,0,1.751-0.532,1.751-1.709c0-1.232-0.715-1.695-1.905-1.695h-0.658V48.159z"/>
+				</g>
+			</svg> </a>
+		</div>
+	</body>
+</html>

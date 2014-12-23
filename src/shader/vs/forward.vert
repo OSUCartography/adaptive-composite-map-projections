@@ -300,7 +300,9 @@ vec2 projectionMix(in vec2 lonLat) {
 
 void main(void) {
 	vec2 xy, lonLatTransformed;
-	//vec2 lonLat = radians(vertexPosition);
+    
+    // convert from grid with coordinates in -1..+1 along both axes to spherical coordinates
+    // with longitude in -PI..+PI and latitude -PI/2..+PI/2
     vec2 lonLat = vertexPosition * geometryScale + vec2(0, geometryCentralLat);
     
     // FIXME a tentative solution for the transformation from Lambert azimuthal to Mercator for square format maps
@@ -317,15 +319,30 @@ void main(void) {
 		alongAntimeridian = 0.;
 		textureCoord = vertexPosition / vec2(360.0, 180.0) + 0.5;
 	} else {
+        
+        // spherical rotation
 		lonLatTransformed = transformSphere(lonLat);
         
     	// shift by central meridian
     	lonLatTransformed.x = 2. * PI * (fract(0.5 * M_1_PI * (lonLatTransformed.x + meridian) + 0.5) - 0.5);
         
-    	alongAntimeridian = 1. - step(antimeridianStripeCellSize, abs(abs(lonLatTransformed.x) - PI));
-        
+        // convert rotated spherical coordinates to texture UV coordinates
     	textureCoord = lonLatTransformed / vec2(2. * PI, PI) + 0.5;
         
+        // compute distance between antimeridian (at +/-PI) and the rotated point (which is used for texture sampling)
+        // if the distance is close to the antimeridian, inverse projection is to be used. Otherwise the
+        // entire texture would be mapped along a stripe following the antimeridian
+        // set flag to 1 if vertex is close to antimeridian
+        float d;
+        // single precision spherical rotation is not exact near poles, increas tolerance 
+        if (abs(lonLatTransformed.y) > 80.0 / 180. * PI) {
+            d = antimeridianStripeCellSize * 5.0;
+        } else {
+            d = antimeridianStripeCellSize;
+        }
+        alongAntimeridian = 1. - step(d, PI - abs(lonLatTransformed.x));
+        
+        // project the unrotated position
     	if (projectionID == MIXPROJECTION) {
     		xy = projectionMix(lonLat);
     	} else {

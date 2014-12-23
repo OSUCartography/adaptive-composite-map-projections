@@ -1,7 +1,8 @@
 /*globals RasterLayer, VideoLayer, resizeCanvasElement, clone, TransformedProjection, TransformedLambertAzimuthal, ProjectionFactory, Stats */
 
 // FIXME
-var MERCATOR_LIMIT_1, MERCATOR_LIMIT_2;
+var MERCATOR_LIMIT_1,
+    MERCATOR_LIMIT_2;
 var MERCATOR_LIMIT_WEB_MAP_SCALE = 6;
 
 // distance of standard parallels from upper and lower border of map
@@ -14,7 +15,9 @@ var formatRatioLimit = 0.8;
 function mouseToCanvasCoordinates(e, parent) {
 	"use strict";
 	// FIXME there should be a better way for this
-	var node, x = e.clientX, y = e.clientY;
+	var node,
+	    x = e.clientX,
+	    y = e.clientY;
 
 	// correct for scrolled document
 	x += document.body.scrollLeft + document.documentElement.scrollLeft;
@@ -31,86 +34,90 @@ function mouseToCanvasCoordinates(e, parent) {
 	};
 }
 
-function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChangeListener) {
+function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChangeListener, stats) {
 	"use strict";
 
 	// zoom factor limits where projections change
-	var zoomLimit1 = 1.5, zoomLimit2 = 2, zoomLimit3 = 3, zoomLimit4 = 4, zoomLimit5 = 6,
+	var zoomLimit1 = 1.5,
+	    zoomLimit2 = 2,
+	    zoomLimit3 = 3,
+	    zoomLimit4 = 4,
+	    zoomLimit5 = 6,
 
 	// zoom factor used when the debug option "Zoom Map" is deselected
-	DEBUG_ZOOM_FACTOR = 0.5,
+	    DEBUG_ZOOM_FACTOR = 0.5,
 
 	// maximum zoom factor
-	MAX_ZOOM_FACTOR = 100,
+	    MAX_ZOOM_FACTOR = 100,
 
 	// minimum zoom factor
-	MIN_ZOOM_FACTOR = 0.05,
+	    MIN_ZOOM_FACTOR = 0.05,
 
 	// zoom factor relativ to canvas size. A value of 1 means that the map vertically fills the available canvas space.
-	zoomFactor = 0.95,
+	    zoomFactor = 0.95,
 
 	// if true, the center of the map and the position of standard parallels are drawn
-	debugDrawOverlayCanvas = false,
+	    debugDrawOverlayCanvas = false,
 
 	// if true, the map adjusts its scale
-	debugZoomToMap = true,
+	    debugZoomToMap = true,
 
 	// if true, a wireframe is rendered for raster layers
-	debugRenderWireframe = false,
+	    debugRenderWireframe = false,
 
 	// if true, the position and extent of the geometry for raster layer are adjusted
-	debugAdaptiveResolutionGrid = true,
+	    debugAdaptiveResolutionGrid = true,
 
 	// if true, raster images are projected with forward transformation, otherwise with an inverse transformation
-	debugForwardRasterProjection = true,
-	
+	    debugForwardRasterProjection = true,
+
 	// if true, mipMap is created for texture minification filtering
-	debugMipMap = true,
-		
+	    debugMipMap = true,
+
 	// if true, anisotropic filtering is used for texture sampling if available
-	debugAnisotropicFiltering = true,
-	
+	    debugAnisotropicFiltering = true,
+
 	// Latitude limit between clyindrical and conic projection at large scales
 	// Use cylindrical projection between the equator and cylindricalLowerLat
-	cylindricalLowerLat = 15 * Math.PI / 180,
+	    cylindricalLowerLat = 15 * Math.PI / 180,
 	// use transition between cylindricalUpperLat and cylindricalLowerLat
-	cylindricalUpperLat = 22 * Math.PI / 180,
+	    cylindricalUpperLat = 22 * Math.PI / 180,
 
 	// use azimuthal projection if central latitude is larger (for large scales)
-	polarUpperLat = 75 * Math.PI / 180,
+	    polarUpperLat = 75 * Math.PI / 180,
 	// use transition between polarLowerLat and polarUpperLat
-	polarLowerLat = 60 * Math.PI / 180,
+	    polarLowerLat = 60 * Math.PI / 180,
 
 	// longitude and latitude of the map center in radians
-	mapCenter = {
+	    mapCenter = {
 		lon0 : 0,
 		lat0 : 30 / 180 * Math.PI
 	},
 
-	// resolution of geometry for raster layer
-	geometryResolution = 500, smallScaleMapProjectionName = "Hammer",
+	// number of triangles along the equator in the tesselated sphere for forward raster projection
+	// the tesselated sphere has half as many triangles along the vertical axis from pole to pole
+	    trianglesAlongEquator = 500,
+
+	//
+	    smallScaleMapProjectionName = "Hammer",
 
 	// if true, oblique world projections can be created
-	rotateSmallScales = true,
+	    rotateSmallScales = true,
 
 	// if true, the equator snaps to its standard horizontal aspect when dragging
-	snapEquator = true,
-
-	// for measuring FPS
-	stats = new Stats();
-	//stats.setMode( 2 );
+	    snapEquator = true,
 
 	// FIXME
-	document.getElementById("FPS").appendChild(stats.domElement);
-
-	// FIXME should not be global
-	map = this;
+	    map = this;
 
 	var MERCATOR_TRANSITION_WIDTH = 0.75; ( function setupMercator() {
 			// FIXME: MERCATOR_LIMIT_1 and MERCATOR_LIMIT_2 are not valid when
 			// the small scale projection changes, as they are relative to the small-scale graticule height !?
 
-			var mercatorMapSize, smallScaleProjection, graticuleHeight, sf;
+			var mercatorMapSize,
+			    smallScaleProjection,
+			    graticuleHeight,
+			    sf;
 
 			// size of web mercator in pixels at web map scale where the transition to
 			// the web mercator projection occurs
@@ -189,7 +196,8 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 
 	// Compute scale factor such that the graticule fits vertically onto the canvas.
 	function referenceScaleFactor() {
-		var smallScaleProjection, graticuleHeight;
+		var smallScaleProjection,
+		    graticuleHeight;
 		smallScaleProjection = ProjectionFactory.getSmallScaleProjection(smallScaleMapProjectionName);
 		graticuleHeight = 2 * ProjectionFactory.halfCentralMeridianLengthOfSmallScaleProjection(smallScaleProjection);
 		return canvasHeight / graticuleHeight;
@@ -197,7 +205,9 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 
 	// invert the offset and map scale applied when rendering the map layers
 	this.canvasXYToUnscaledXY = function(x, y) {
-		var cx, cy, scale;
+		var cx,
+		    cy,
+		    scale;
 		cx = canvasWidth / 2;
 		cy = canvasHeight / 2;
 		x -= cx;
@@ -222,7 +232,11 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 
 	// FIXME seems to be broken: apply lon0?
 	this.lonLat2Canvas = function(lon, lat, proj) {
-		var dy, scale, centerX, centerY, pt = [];
+		var dy,
+		    scale,
+		    centerX,
+		    centerY,
+		    pt = [];
 
 		if (!proj) {
 			proj = map.updateProjection();
@@ -246,7 +260,10 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		// The graticule of the transformed Lambert azimuthal projection has an invard pointing wedge
 		// when w is between 0.5 and 1. To make sure this wedge is not visible, the zoom factor limit is adjusted
 		// where the transformed Lambert azimuthal projection is used.
-		var zoomLimit, isLandscape, mapTop, xy;
+		var zoomLimit,
+		    isLandscape,
+		    mapTop,
+		    xy;
 		zoomLimit = zoomLimit1;
 		isLandscape = (canvasHeight / canvasWidth) < formatRatioLimit;
 		if (!isLandscape) {
@@ -324,12 +341,17 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		var INC = 5,
 
 		// bounding box
-		bb = {
+		    bb = {
 			west : Number.MAX_VALUE,
 			south : Number.MAX_VALUE,
 			east : -Number.MAX_VALUE,
 			north : -Number.MAX_VALUE
-		}, x, y, lonlat, southPoleVisible, northPoleVisible;
+		},
+		    x,
+		    y,
+		    lonlat,
+		    southPoleVisible,
+		    northPoleVisible;
 
 		southPoleVisible = isSouthPoleVisible(projection);
 		northPoleVisible = isNorthPoleVisible(projection);
@@ -418,12 +440,13 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 	}
 
 
-	this.render = function(fastRender) {
+	this.render = function(fastRender, onlyRenderVideo) {
 		if (!Array.isArray(layers)) {
 			return;
 		}
-
-		stats.begin();
+		if (stats != undefined) {
+			stats.begin();
+		}
 
 		var projection = this.updateProjection();
 		var bb = visibleGeographicBoundingBoxCenteredOnLon0(projection);
@@ -431,7 +454,8 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		//Geometry projection is different then projection of the map. To create adaptive grid,
 		//right (geometry) bounding box needs to be defined and passed to the shaders.
 		//Geometry projections differs only in central latitude.
-		var poleLatitude = Math.PI / 2, geometryLat0 = 0;
+		var poleLatitude = Math.PI / 2,
+		    geometryLat0 = 0;
 		//cloning projection configurations
 		var geometryConf = clone(this.conf);
 
@@ -473,17 +497,25 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		var scale = refScaleFactor * ( debugZoomToMap ? zoomFactor : DEBUG_ZOOM_FACTOR);
 
 		var vectorContext = vectorCanvas.getContext('2d');
+		var renderVector = (onlyRenderVideo === undefined || !onlyRenderVideo);
 		vectorContext.setTransform(1, 0, 0, 1, 0, 0);
-		vectorContext.clearRect(0, 0, vectorCanvas.width, vectorCanvas.height);
+		if (renderVector) {
+			vectorContext.clearRect(0, 0, vectorCanvas.width, vectorCanvas.height);
+		}
 
 		// FIXME
-		var layerID, layer;
+		var layerID,
+		    layer;
 
 		for ( layerID = 0; layerID < layers.length; layerID += 1) {
+			layer = layers[layerID];
+			if ( typeof layer.isVisible === "function" && layer.isVisible() === false) {
+				continue;
+			}
+
 			//save context so that each layer can change drawing states
 			vectorContext.save();
 
-			layer = layers[layerID];
 			layer.visibleGeographicBoundingBoxCenteredOnLon0 = bb;
 			layer.visibleGeometryBoundingBoxCenteredOnLon0 = geometryBB;
 
@@ -507,7 +539,9 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 			layer.map = this;
 			layer.canvasWidth = canvasWidth;
 			layer.canvasHeight = canvasHeight;
-			layer.render(fastRender, debugZoomToMap);
+			if ( layer instanceof VideoLayer || renderVector) {
+				layer.render(fastRender, debugZoomToMap);
+			}
 
 			// restore drawing states
 			vectorContext.restore();
@@ -590,7 +624,9 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 			ctx.fillText(txt, canvasWidth - metrics.width - typeSize, canvasHeight - typeSize * 0.5);
 		}
 
-		stats.end();
+		if (stats !== undefined) {
+			stats.end();
+		}
 	};
 
 	this.resizeMap = function(w, h) {
@@ -644,11 +680,14 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 	}
 
 	function loadMapData() {
-		var layer, nLayers, i;
+		var layer,
+		    nLayers,
+		    i;
 
 		//  load map layer data
 		if (Array.isArray(layers)) {
-			for ( i = 0, nLayers = layers.length; i < nLayers; i += 1) {
+			for ( i = 0,
+			nLayers = layers.length; i < nLayers; i += 1) {
 				layer = layers[i];
 				if ( layer instanceof RasterLayer || layer instanceof VideoLayer) {
 					layer.canvas = rasterCanvas;
@@ -666,6 +705,34 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 			}
 		}
 	}
+
+	function playPauseVideo(play) {
+		var layer,
+		    i;
+
+		//  load map layer data
+		if (Array.isArray(layers)) {
+			for ( i = 0; i < layers.length; i += 1) {
+				layer = layers[i];
+				if ( layer instanceof VideoLayer) {
+					if (play) {
+						layer.play();
+					} else {
+						layer.pause();
+					}
+				}
+			}
+		}
+	}
+
+
+	this.playVideo = function() {
+		playPauseVideo(true);
+	};
+
+	this.pauseVideo = function() {
+		playPauseVideo(false);
+	};
 
 	var projection = this.updateProjection();
 
@@ -695,7 +762,8 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 	 * Calls clear() of all previous layers.
 	 */
 	this.setLayers = function(mapLayers) {
-		var i, layer;
+		var i,
+		    layer;
 		if (Array.isArray(layers)) {
 			for ( i = 0; i < layers.length; i += 1) {
 				layer = layers[i];
@@ -706,6 +774,21 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		}
 		layers = mapLayers;
 		loadMapData();
+	};
+
+	this.setLayerVisibility = function(layerName, visible) {
+		var i,
+		    layer;
+		if (Array.isArray(layers)) {
+			for ( i = 0; i < layers.length; i += 1) {
+				layer = layers[i];
+				if (layer.name === layerName) {
+					layer.visible = visible;
+					this.render();
+					return;
+				}
+			}
+		}
 	};
 
 	this.getLargeScalePolarUpperLat = function() {
@@ -807,10 +890,10 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		return debugMipMap;
 	};
 
-	this.setMipMap= function(mipMap) {
+	this.setMipMap = function(mipMap) {
 		debugMipMap = mipMap;
 	};
-	
+
 	this.isAnistropicFiltering = function() {
 		return debugAnisotropicFiltering;
 	};
@@ -818,7 +901,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 	this.setAnisotropicFiltering = function(anisotropicFiltering) {
 		debugAnisotropicFiltering = anisotropicFiltering;
 	};
-	
+
 	this.isEquatorSnapping = function() {
 		return snapEquator;
 	};
@@ -844,35 +927,45 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		return parent;
 	};
 
-	this.getGeometryResolution = function() {
-		return geometryResolution;
+	this.getNumberOfTrianglesAlongEquator = function() {
+		return trianglesAlongEquator;
 	};
 
-	this.setGeometryResolution = function(resolution) {
-		var layer, nLayers, i;
-		
-		geometryResolution = resolution;
-		
-		if (Array.isArray(layers)) {
-			for ( i = 0, nLayers = layers.length; i < nLayers; i += 1) {
-				layer = layers[i];
-				if ( typeof layer.adjustTesselationDensity === 'function') {
-					layer.adjustTesselationDensity();
-				}
-			}
+	this.setNumberOfTrianglesAlongEquator = function(nTriangles) {
+		var layer,
+		    nLayers,
+		    i;
+
+		trianglesAlongEquator = nTriangles;
+		if (trianglesAlongEquator % 2 === 1) {
+			trianglesAlongEquator += 1;
 		}
-		this.render();
-	};
-
-	this.reloadGeometry = function() {
-		var layer, nLayers, i;
+		
 		if (Array.isArray(layers)) {
-			for ( i = 0, nLayers = layers.length; i < nLayers; i += 1) {
+			for ( i = 0,
+			nLayers = layers.length; i < nLayers; i += 1) {
 				layer = layers[i];
 				if ( typeof layer.reloadGeometry === 'function') {
 					layer.reloadGeometry();
 				}
 			}
 		}
+		this.render();
+	};
+
+	this.reloadData = function() {
+		var layer,
+		    nLayers,
+		    i;
+		if (Array.isArray(layers)) {
+			for ( i = 0,
+			nLayers = layers.length; i < nLayers; i += 1) {
+				layer = layers[i];
+				if ( typeof layer.reloadData === 'function') {
+					layer.reloadData();
+				}
+			}
+		}
+		this.render();
 	};
 }

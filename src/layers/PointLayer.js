@@ -1,7 +1,7 @@
 function PointLayer(url, style, scaleVisibility) {"use strict";
 
     PointLayer.prototype = new AbstractLayer();
-    AbstractLayer.call(this, style, scaleVisibility);
+    AbstractLayer.call(this, style, scaleVisibility, "points");
 
     this.drawSquareSymbol = function(ctx, xy, outterD, outterFill, outterStroke, outterLineWidth, innerSymbol) {
         var r = outterD * 0.5, innerD = innerSymbol.d, innerR = innerD * 0.5, x = xy[0], y = xy[1];

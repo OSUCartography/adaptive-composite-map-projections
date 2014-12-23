@@ -4,7 +4,7 @@ distanceTool = null; // replace by observer pattern
 function DistanceTool(style) {"use strict";
     
     DistanceTool.prototype = new AbstractLayer();
-    AbstractLayer.call(this, style);
+    AbstractLayer.call(this, style, "distanceTool");
     
     var lon1 = 0, lat1 = 0, lon2 = 1, lat2 = 1;
     

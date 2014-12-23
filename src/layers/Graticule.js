@@ -8,7 +8,7 @@
 function Graticule(style, scaleVisibility, poleRadiusPx, poleDistPx) {"use strict";
 
 	Graticule.prototype = new AbstractLayer();
-	AbstractLayer.call(this, style, scaleVisibility);
+	AbstractLayer.call(this, style, scaleVisibility, "graticule");
 
 	// if the graticule spacing is larger than this value, no meridians are pruned at poles.
 	var MIN_PRUNING_SPACING = 30 / 180 * Math.PI;

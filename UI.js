@@ -230,7 +230,7 @@ $(window).load(function() {
 	h = $("#adaptiveMap").height();
 	map = new AdaptiveMap(document.getElementById('adaptiveMap'), w, h, null, projectionChangeListener);
 	mapId = document.getElementById("mapSelectionMenu").selectedIndex;
-	map.setLayers(getLayers()[mapId]);
+	map.setLayers(getLayers(map)[mapId]);
 	new MapEvents(map);
 
 	slippyMap = initSlippyMap();
@@ -432,7 +432,7 @@ $(window).load(function() {
 	//add slider to adjust the grid cellsize of the adaptive resolution grid in the debug tab
 	$(function() {
 		function action(event, ui) {
-			map.setGeometryResolution(ui.value);
+			map.setNumberOfTrianglesAlongEquator(ui.value);
 		}
 
 
@@ -482,7 +482,7 @@ $(window).load(function() {
 
 	$("#forwardRadioButton").on("click", function() {
 		map.setForwardRasterProjection(this.checked);
-		map.reloadGeometry();
+		map.reloadData();
 		map.render();
 		$("#adaptiveResolutionGridCheckbox").prop("disabled", false);
 		$("#renderWireframeCheckbox").prop("disabled", false);
@@ -493,7 +493,7 @@ $(window).load(function() {
 
 	$("#inverseRadioButton").on("click", function() {
 		map.setForwardRasterProjection(!this.checked);
-		map.reloadGeometry();
+		map.reloadData();
 		map.render();
 		$("#adaptiveResolutionGridCheckbox").prop("disabled", true);
 		$("#renderWireframeCheckbox").prop("disabled", true);
@@ -506,14 +506,14 @@ $(window).load(function() {
 
 	$("#mipMapCheckbox").on("click", function() {
 		map.setMipMap(this.checked);
-		map.reloadGeometry();
+		map.reloadData();
 		map.render();
 		$("#anisotropicFilteringCheckbox").prop("disabled", !this.checked);
 	});
 	
 	$("#anisotropicFilteringCheckbox").on("click", function() {
 		map.setAnisotropicFiltering(this.checked);
-		map.reloadGeometry();
+		map.reloadData();
 		map.render();
 	});
 
@@ -533,7 +533,9 @@ $(window).load(function() {
 
 	$("#mapSelectionMenu").on("change", function() {
 		var mapId = this.selectedIndex;
-		map.setLayers(getLayers()[mapId]);
+		map.pauseVideo();
+		map.setLayers(getLayers(map)[mapId]);
+		map.playVideo();
 		map.render();
 	});
 

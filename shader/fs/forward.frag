@@ -540,6 +540,7 @@ vec2 invProjectionMix(in vec2 xy) {
 
 void main(void) {
     if (alongAntimeridian > 0.) {
+        // inverse projection and texture sampling
         vec2 xy = (gl_FragCoord.xy - dXY) / scaleXY * 2.;
         xy.y -= falseNorthing;
         

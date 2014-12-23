@@ -7,4 +7,5 @@ data_layers/video/wind.ogg
 data_layers/video/world_temp_2013_Okt-Dez.mp4
 .DS_Store
 
-*.ogg
+NASA/2048x1024.*
+NASA/1024x512.*

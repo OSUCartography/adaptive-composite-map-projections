@@ -5,7 +5,7 @@
  */
 function PolarCircles(style, scaleVisibility) {"use strict";
 	// FIXME ?
-    AbstractLayer.call(this, style, scaleVisibility);
+    AbstractLayer.call(this, style, scaleVisibility, "polarCircles");
     PolarCircles.prototype = new AbstractLayer();
     this.LAT = (66 + 33 / 60 + 44 / 60 / 60) / 180 * Math.PI;
     

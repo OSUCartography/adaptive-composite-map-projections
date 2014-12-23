@@ -1,4 +1,4 @@
-/* Build Time: August 11, 2014 01:45:26 PM */
+/* Build Time: December 21, 2014 01:07:23 PM */
 /*globals LambertCylindricalEqualArea, ProjectionFactory */
 function MapEvents(map) {"use strict";
 
@@ -1058,6 +1058,20 @@ function WebGL() {
 	"use strict";
 }
 
+WebGL.hasWebGL = function() {
+	"use strict";
+	try {
+		var canvas = document.createElement('canvas');
+		return !!(window.WebGLRenderingContext && (canvas.getContext('webgl') || canvas.getContext('experimental-webgl') ) );
+	} catch(e ) {
+		return false;
+	}
+};
+
+WebGL.isPowerOfTwo = function(value) {
+	return (value & (value - 1 ) ) === 0 && value !== 0;
+};
+
 /**
  * Creates a webgl context. From webgl-utils.js
  * @param {!Canvas} canvas The canvas tag to get context from.
@@ -1065,7 +1079,9 @@ function WebGL() {
  */
 WebGL.create3DContext = function(canvas, opt_attribs) {
 	"use strict";
-	var context, i, names = ["webgl", "experimental-webgl", "webkit-3d", "moz-webgl"];
+	var context,
+	    i,
+	    names = ["webgl", "experimental-webgl", "webkit-3d", "moz-webgl"];
 	context = null;
 	for ( i = 0; i < names.length; i += 1) {
 		try {
@@ -1083,7 +1099,8 @@ WebGL.loadShader = function(gl, url) {
 	"use strict";
 
 	// http://www.khronos.org/message_boards/showthread.php/7170-How-to-include-shaders
-	var shader, req = new XMLHttpRequest();
+	var shader,
+	    req = new XMLHttpRequest();
 	req.open("GET", url, false);
 	req.send(null);
 	if (req.status !== 200/* http */ && req.status !== 0 /* local file*/) {
@@ -1106,7 +1123,8 @@ WebGL.loadShader = function(gl, url) {
  */
 WebGL.enableAnisotropicFiltering = function(gl, texture) {
 	"use strict";
-	var max, ext;
+	var max,
+	    ext;
 	ext = (gl.getExtension('EXT_texture_filter_anisotropic') || gl.getExtension('MOZ_EXT_texture_filter_anisotropic') || gl.getExtension('WEBKIT_EXT_texture_filter_anisotropic'));
 	if (ext !== null) {
 		max = gl.getParameter(ext.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
@@ -1193,7 +1211,9 @@ WebGL.addContextLostAndRestoredHandler = function(canvas, contextRestoredHandler
 
 WebGL.loadShaderProgram = function(gl, vertexShaderURL, fragmentShaderURL) {
 	"use strict";
-	var vertexShader, fragmentShader, shaderProgram;
+	var vertexShader,
+	    fragmentShader,
+	    shaderProgram;
 
 	vertexShader = WebGL.loadShader(gl, vertexShaderURL);
 	fragmentShader = WebGL.loadShader(gl, fragmentShaderURL);
@@ -1239,7 +1259,12 @@ WebGL.setDefaultUniforms = function(gl, program) {
 WebGL.setUniforms = function(gl, program, scale, lon0, uniforms, canvas, adaptiveGridConf) {
 	"use strict";
 
-	var viewTransform, xScale, yScale, i, geometryBBox;
+	var viewTransform,
+	    xScale,
+	    yScale,
+	    i,
+	    geometryBBox,
+	    triangleSizeRad;
 	// set default uniform values that are needed, e.g. rotation on sphere
 	WebGL.setDefaultUniforms(gl, program);
 	gl.enableVertexAttribArray(gl.getAttribLocation(program, 'vertexPosition'));
@@ -1252,7 +1277,13 @@ WebGL.setUniforms = function(gl, program, scale, lon0, uniforms, canvas, adaptiv
 		xScale = Math.abs(geometryBBox.east - geometryBBox.west) / 2;
 		yScale = Math.abs(geometryBBox.north - geometryBBox.south) / 2;
 		gl.uniform2fv(gl.getUniformLocation(program, 'geometryScale'), [xScale, yScale]);
+		triangleSizeRad = 2 * Math.PI / adaptiveGridConf.nbrTrianglesAlongEquator * xScale;
+	} else {
+		triangleSizeRad = 2 * Math.PI / adaptiveGridConf.nbrTrianglesAlongEquator;
 	}
+	
+	
+	gl.uniform1f(gl.getUniformLocation(program, "antimeridianStripeCellSize"), triangleSizeRad * 4);
 
 	// modelViewProjMatrix
 	viewTransform = new J3DIMatrix4();
@@ -1275,27 +1306,36 @@ WebGL.setUniforms = function(gl, program, scale, lon0, uniforms, canvas, adaptiv
 };
 
 /**
- * loads a tesselated sphere
+ * loads a tesselated "sphere". This is a grid in the range -1..1 along both axes with twice 
+ * as many triangles along the x axis than along the y axis.
  */
-WebGL.loadSphereGeometry = function(gl, resolution) {
+WebGL.loadSphereGeometry = function(gl, trianglesAlongEquator) {
 	"use strict";
-	var vertices, b, x, y, xIdx, yIdx, startY, stepY, idxCount, buffer, cellSize, geometry = {};
-
-	cellSize = 2 / resolution;
+	var vertices,
+	    b,
+	    x,
+	    y,
+	    xIdx,
+	    yIdx,
+	    startY,
+	    stepY,
+	    idxCount,
+	    buffer,
+	    geometry = {};
+			
 	b = {
 		startX : -1,
 		startY : -1,
-		stepX : cellSize / 2,
-		stepY : cellSize,
-		countX : Math.round(4 / cellSize),
-		countY : Math.round(2 / cellSize) + 1
+		stepX : 2 / trianglesAlongEquator,
+		stepY : 2 / (trianglesAlongEquator / 2),
+		countX : trianglesAlongEquator,
+		countY : trianglesAlongEquator / 2 + 1
 	};
 
 	vertices = new Float32Array(4 * b.countY * b.countX);
-
 	idxCount = 0;
 
-	//generation of one large triangle strip (S-Shaped), with degenerated triangles (NO IBO, just VBO!)
+	//generation of one large triangle strip (S-shaped), with degenerated triangles (NO IBO, just VBO!)
 	//compare url for vbo+ibo, http://dan.lecocq.us/wordpress/2009/12/25/triangle-strip-for-grids-a-construction/
 	for ( xIdx = 0; xIdx < b.countX; xIdx += 1) {
 		x = b.startX + xIdx * b.stepX;
@@ -1311,10 +1351,13 @@ WebGL.loadSphereGeometry = function(gl, resolution) {
 		}
 
 		for ( yIdx = 0; yIdx < b.countY; yIdx += 1) {
-			y = startY + stepY * yIdx;
+			y = b.startY + b.stepY * yIdx;
 			vertices.set([x, y, x + b.stepX, y], 4 * idxCount);
 			idxCount += 1;
 		}
+		
+		b.startY *= -1;
+		b.stepY *= -1;
 	}
 
 	buffer = gl.createBuffer();
@@ -1323,7 +1366,6 @@ WebGL.loadSphereGeometry = function(gl, resolution) {
 
 	geometry.buffer = buffer;
 	geometry.vertexCount = vertices.length / 2;
-	geometry.cellSize = cellSize;
 
 	return geometry;
 };
@@ -1333,7 +1375,9 @@ WebGL.loadSphereGeometry = function(gl, resolution) {
  */
 WebGL.loadRectangleGeometry = function(gl) {
 	"use strict";
-	var vertices, buffer, geometry = {};
+	var vertices,
+	    buffer,
+	    geometry = {};
 
 	buffer = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -1357,7 +1401,10 @@ WebGL.deleteGeometry = function(gl, geometry) {
 // http://www.khronos.org/webgl/wiki/WebGL_and_OpenGL_Differences
 WebGL.scaleTextureImage = function(gl, image) {
 	"use strict";
-	var canvas, maxSize, w = image.width, h = image.height;
+	var canvas,
+	    maxSize,
+	    w = image.width,
+	    h = image.height;
 
 	maxSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
 
@@ -1400,8 +1447,9 @@ WebGL.scaleTextureImage = function(gl, image) {
 // also should store a reference to the loaded image somewhere to avoid reloading it multiple times.
 WebGL.loadStaticTexture = function(gl, url, map, texture) {
 	"use strict";
-	var useMipMap = map.isMipMap(), image = new Image();
-	
+	var useMipMap = map.isMipMap(),
+	    image = new Image();
+
 	// FIXME
 	texture.imageLoaded = false;
 	image.onload = function() {
@@ -1415,6 +1463,7 @@ WebGL.loadStaticTexture = function(gl, url, map, texture) {
 		gl.bindTexture(gl.TEXTURE_2D, texture);
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 
+		// repeat mode is required for inverse projection
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 		// mip maps are only available for power of two dimensions
@@ -1423,7 +1472,7 @@ WebGL.loadStaticTexture = function(gl, url, map, texture) {
 		if (useMipMap) {
 			gl.generateMipmap(gl.TEXTURE_2D);
 		}
-		
+
 		texture.imageLoaded = true;
 		map.render();
 	};
@@ -1444,9 +1493,6 @@ WebGL.draw = function(gl, drawMode, scale, lon0, uniforms, canvas, geometry, sha
 	gl.clear(gl.COLOR_BUFFER_BIT);
 	gl.useProgram(shaderProgram);
 	WebGL.setUniforms(gl, shaderProgram, scale, lon0, uniforms, canvas, adaptiveGridConf);
-
-	gl.uniform1f(gl.getUniformLocation(shaderProgram, "antimeridianStripeCellSize"), geometry.cellSize * Math.PI);
-
 	gl.bindBuffer(gl.ARRAY_BUFFER, geometry.buffer);
 	vertexPositionAttribute = gl.getAttribLocation(shaderProgram, 'vertexPosition');
 	gl.vertexAttribPointer(vertexPositionAttribute, 2, gl.FLOAT, false, 0, 0);
@@ -1688,7 +1734,7 @@ distanceTool = null; // replace by observer pattern
 function DistanceTool(style) {"use strict";
     
     DistanceTool.prototype = new AbstractLayer();
-    AbstractLayer.call(this, style);
+    AbstractLayer.call(this, style, "distanceTool");
     
     var lon1 = 0, lat1 = 0, lon2 = 1, lat2 = 1;
     
@@ -1881,7 +1927,7 @@ function distVincenty(/*lat1, lon1, lat2, lon2*/) {
 function Graticule(style, scaleVisibility, poleRadiusPx, poleDistPx) {"use strict";
 
 	Graticule.prototype = new AbstractLayer();
-	AbstractLayer.call(this, style, scaleVisibility);
+	AbstractLayer.call(this, style, scaleVisibility, "graticule");
 
 	// if the graticule spacing is larger than this value, no meridians are pruned at poles.
 	var MIN_PRUNING_SPACING = 30 / 180 * Math.PI;
@@ -2180,7 +2226,7 @@ function GraticuleOutline(style) {"use strict";
     
     var HALF_PI = Math.PI / 2;
     
-    AbstractLayer.call(this, style);
+    AbstractLayer.call(this, style, "graticuleOutline");
 
     /**
      * Returns whether a point in Cartesian coordinates is inside the graticule border.
@@ -2620,9 +2666,11 @@ function shapefileReader(url, layerLoadCallback) {
 	new BinaryAjax(url + '.dbf', onDbfComplete, onDbfFail);
 }
 
-function AbstractLayer(style, scaleVisibility) {"use strict";
+function AbstractLayer(style, scaleVisibility, name) {"use strict";
 
 	this.style = style;
+	this.name = name;
+	this.visible = true;
 
 	// interpolated scale-dependent line width. Use instead of this.style.lineWidth
 	this.lineWidth = null;
@@ -2662,6 +2710,9 @@ function AbstractLayer(style, scaleVisibility) {"use strict";
 	};
 
 	this.isVisible = function() {
+		if (typeof this.visible !== 'undefined' && this.visible === false) {
+			return false;
+		}
 		if ( scaleVisibility instanceof Object === false) {
 			return true;
 		}
@@ -2748,7 +2799,7 @@ function AbstractLayer(style, scaleVisibility) {"use strict";
 function PointLayer(url, style, scaleVisibility) {"use strict";
 
     PointLayer.prototype = new AbstractLayer();
-    AbstractLayer.call(this, style, scaleVisibility);
+    AbstractLayer.call(this, style, scaleVisibility, "points");
 
     this.drawSquareSymbol = function(ctx, xy, outterD, outterFill, outterStroke, outterLineWidth, innerSymbol) {
         var r = outterD * 0.5, innerD = innerSymbol.d, innerR = innerD * 0.5, x = xy[0], y = xy[1];
@@ -3229,7 +3280,7 @@ function PointLayer(url, style, scaleVisibility) {"use strict";
  */
 function PolarCircles(style, scaleVisibility) {"use strict";
 	// FIXME ?
-    AbstractLayer.call(this, style, scaleVisibility);
+    AbstractLayer.call(this, style, scaleVisibility, "polarCircles");
     PolarCircles.prototype = new AbstractLayer();
     this.LAT = (66 + 33 / 60 + 44 / 60 / 60) / 180 * Math.PI;
     
@@ -3252,10 +3303,10 @@ function PolarCircles(style, scaleVisibility) {"use strict";
         ctx.stroke();
     };
 }
-function PolylineLayer(url, style, scaleVisibility) {"use strict";
+function PolylineLayer(url, style, scaleVisibility, name) {"use strict";
 
     PolylineLayer.prototype = new AbstractLayer();
-    AbstractLayer.call(this, style, scaleVisibility);
+    AbstractLayer.call(this, style, scaleVisibility, name);
 
     var layer = this;
 
@@ -3950,7 +4001,7 @@ function PolylineLayer(url, style, scaleVisibility) {"use strict";
         lonLimit = adjlon(lon0 + Math.PI);
 
         // a bounding box around the viewport in geographic coordinates. This is not a rectangle on the map,
-        // but a spherical rectangle sphere, surrounding the map. The east and west coordinates are relative to
+        // but a spherical quadrilateral, surrounding the map. The east and west coordinates are relative to
         // the central longitude, i.e. the horizontal origin is on lon0
         viewPortBB = layer.visibleGeographicBoundingBoxCenteredOnLon0;
 
@@ -3975,15 +4026,14 @@ function PolylineLayer(url, style, scaleVisibility) {"use strict";
             shp = layer.geometry[i];
             bb = shp.box;
 
-            // only project the feature if it is inside the viewport (in geographic coordinates)
+            // test whether the feature is inside the latitude range of the viewport (in geographic coordinates)
             // features may still entirely be outside the map viewport after projection
-            // test whether the feature is inside the visible latitude range
             if (bb.yMin > viewPortBB.north || bb.yMax < viewPortBB.south) {
                 // FIXME
-                //continue;
+                continue;
             }
 
-            // test whether the feature is inside the visible longitude range.
+            // test whether the feature is inside the longitude range of the viewport (in geographic coordinates).
             // to be visible, the feature's west or east border must be inside the viewport,
             // or both borders must be outside the viewport and have oposite signs.
             bbWest = adjlon(bb.xMin - lon0);
@@ -3993,7 +4043,7 @@ function PolylineLayer(url, style, scaleVisibility) {"use strict";
                 visible = bbWest <= 0 && bbEast >= 0;
             }
 
-            if (true /* // FIXME visible */) {
+            if (visible /* FIXME */) {
                 lineWidthScale = 1;
                 if (lineWidthScaleField !== null) {
                     // read text from feature attributes
@@ -4051,7 +4101,8 @@ function RasterLayer(url) {
 			useAdaptiveResolutionGrid : map.isAdaptiveResolutionGrid(),
 			geometryBBox : this.visibleGeometryBoundingBoxCenteredOnLon0,
 			mapScale : map.getZoomFactor(),
-			startScaleLimit : map.conf.zoomLimit2
+			startScaleLimit : map.conf.zoomLimit2,
+			nbrTrianglesAlongEquator : map.getNumberOfTrianglesAlongEquator()
 		};
 		scale = this.mapScale / this.refScaleFactor * this.glScale;
 		if (map.isForwardRasterProjection()) {
@@ -4085,7 +4136,7 @@ function RasterLayer(url) {
 		shaderProgram = WebGL.loadShaderProgram(gl, vertexShaderName, fragmentShaderName);
 		texture = gl.createTexture();
 		if (map.isForwardRasterProjection()) {
-			geometry = WebGL.loadSphereGeometry(gl, map.getGeometryResolution());
+			geometry = WebGL.loadSphereGeometry(gl, map.getNumberOfTrianglesAlongEquator());
 		} else {
 			geometry = WebGL.loadRectangleGeometry(gl);
 		}
@@ -4106,13 +4157,11 @@ function RasterLayer(url) {
 		loadData(gl);
 	};
 
-	this.adjustTesselationDensity = function() {
-		if (map.isForwardRasterProjection()) {
-			geometry = WebGL.loadSphereGeometry(gl, map.getGeometryResolution());
-		}
+	this.reloadGeometry = function() {
+		geometry = WebGL.loadSphereGeometry(gl, map.getNumberOfTrianglesAlongEquator());
 	};
 	
-	this.reloadGeometry = function() {
+	this.reloadData = function() {
 		this.clear();
 		loadData(gl);
 	};
@@ -4135,10 +4184,16 @@ function Tropics(style, scaleVisibility) {"use strict";
     this.LAT = 23.4378 / 180 * Math.PI;    
 }
 /*globals WebGL */
-function VideoLayer(videoDOMElement) {
+function VideoLayer(videoDOMElement, map) {
 	"use strict";
 
-	var gl = null, map, shaderProgram, geometry = [], texture = null, timer;
+	var gl = null,
+	    shaderProgram,
+	    geometry = [],
+	    texture = null,
+	// a timer is needed to trigger rendering each frame
+	// timeupdate events sent by movie would not be frequent enough for a smooth animation
+	    timer;
 	this.canvas = null;
 	this.projection = null;
 	this.mapScale = 1;
@@ -4147,53 +4202,77 @@ function VideoLayer(videoDOMElement) {
 		lat0 : 0
 	};
 
-	videoDOMElement.addEventListener("ended", function() {
-		window.cancelAnimationFrame(timer);
-	}, true);
+	function initTexture() {
+		texture = gl.createTexture();
+		gl.bindTexture(gl.TEXTURE_2D, texture);
+		// repeat mode is required for inverse projection
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+
+		/*
+		 // mipmaps for video textures seems not to be supported by Firefox (even with power of two video textures)
+		 // mipmaps are only available for power of two dimensions
+		 // not having mipmaps for video is not a huge problem
+		 var w = videoDOMElement.videoWidth, h = videoDOMElement.videoHeight,
+		 useMipMap = map.isMipMap() && WebGL.isPowerOfTwo(w) && WebGL.isPowerOfTwo(h);
+		 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, useMipMap ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
+		 if (useMipMap) {
+		 gl.generateMipmap(gl.TEXTURE_2D);
+		 }
+		 */
+	}
 
 	function updateTexture() {
 		gl.activeTexture(gl.TEXTURE0);
 		gl.bindTexture(gl.TEXTURE_2D, texture);
-		// gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, videoDOMElement);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-		gl.uniform1i(gl.getUniformLocation(shaderProgram, "texture"), 0);
 	}
 
 
 	this.render = function() {
-		var uniforms, scale, adaptiveGridConf;
+		var drawMode,
+		    uniforms,
+		    scale,
+		    adaptiveGridConf,
+		    onlyRenderVideo = (this.onlyRenderVideo === undefined);
 
 		// render() is calling itself in a rendering loop, and render() is also called when the projection changes.
 		// To avoid multiple concurrent rendering loops, the current loop has to be stopped.
 		window.cancelAnimationFrame(timer);
 
-		if (gl === null) {
+		if (gl === null || videoDOMElement.readyState < 2) {
 			return;
 		}
 
-		if (videoDOMElement.paused) {
-			videoDOMElement.play();
+		if (texture !== null) {
+			updateTexture();
+
+			uniforms = this.projection.getShaderUniforms();
+			adaptiveGridConf = {
+				useAdaptiveResolutionGrid : map.isAdaptiveResolutionGrid(),
+				geometryBBox : this.visibleGeometryBoundingBoxCenteredOnLon0,
+				mapScale : map.getZoomFactor(),
+				startScaleLimit : map.conf.zoomLimit2,
+				nbrTrianglesAlongEquator : map.getNumberOfTrianglesAlongEquator()
+			};
+			scale = this.mapScale / this.refScaleFactor * this.glScale;
+			if (map.isForwardRasterProjection()) {
+				drawMode = map.isRenderingWireframe() ? gl.LINE_STRIP : gl.TRIANGLE_STRIP;
+			} else {
+				drawMode = map.isRenderingWireframe() ? gl.LINE_STRIP : gl.TRIANGLES;
+			}
+			WebGL.draw(gl, drawMode, scale, this.mapCenter.lon0, uniforms, this.canvas, geometry, shaderProgram, adaptiveGridConf);
 		}
 
-		updateTexture();
-
-		uniforms = this.projection.getShaderUniforms();
-		adaptiveGridConf = {
-			useAdaptiveResolutionGrid : map.isAdaptiveResolutionGrid(),
-			geometryBBox : this.visibleGeometryBoundingBoxCenteredOnLon0,
-			mapScale : map.getZoomFactor(),
-			startScaleLimit : map.conf.zoomLimit2
-		};
-		scale = this.mapScale / this.refScaleFactor * this.glScale;
-		WebGL.draw(gl, gl.TRIANGLE_STRIP, scale, this.mapCenter.lon0, uniforms, this.canvas, geometry, shaderProgram, adaptiveGridConf);
-		timer = window.requestAnimationFrame(function() {
-			map.render(false);
-		});
-
+		// if video is paused, don't render next frame
+		if (!videoDOMElement.paused) {
+			timer = window.requestAnimationFrame(function() {
+				map.render(false, true);
+			});
+		}
 	};
 
 	this.clear = function() {
@@ -4205,38 +4284,95 @@ function VideoLayer(videoDOMElement) {
 			gl.deleteProgram(shaderProgram);
 			WebGL.deleteGeometry(gl, geometry);
 		}
-		videoDOMElement.pause();
 	};
 
-	
+	function loadData(gl) {
+		var vertexShaderName,
+		    fragmentShaderName;
+		gl.clearColor(0, 0, 0, 0);
+		if (map.isForwardRasterProjection()) {
+			vertexShaderName = 'shader/vs/forward.vert';
+			fragmentShaderName = 'shader/fs/forward.frag';
+		} else {
+			vertexShaderName = 'shader/vs/inverse.vert';
+			fragmentShaderName = 'shader/fs/inverse.frag';
+		}
+		shaderProgram = WebGL.loadShaderProgram(gl, vertexShaderName, fragmentShaderName);
+
+		if (map.isForwardRasterProjection()) {
+			geometry = WebGL.loadSphereGeometry(gl, map.getNumberOfTrianglesAlongEquator());
+		} else {
+			geometry = WebGL.loadRectangleGeometry(gl);
+		}
+
+		videoDOMElement.setAttribute("playsinline", "");
+		videoDOMElement.setAttribute("webkit-playsinline", "");
+
+		initTexture();
+		gl.uniform1i(gl.getUniformLocation(shaderProgram, "texture"), 0);
+
+		if (map.isAnistropicFiltering()) {
+			WebGL.enableAnisotropicFiltering(gl, texture);
+		}
+	}
+
+
 	this.load = function(m) {
 		map = m;
 		gl = WebGL.init(this.canvas);
 		if (gl === null) {
-			throw new Error("WebGL is not available. Firefox or Chrome is required.");
+			throw new Error("WebGL is not available.");
 		}
-		shaderProgram = WebGL.loadShaderProgram(gl, 'shader/vs/forward.vert', 'shader/fs/forward.frag');
-		texture = gl.createTexture();
-		geometry = WebGL.loadSphereGeometry(gl, map.getGeometryResolution());
-		if (videoDOMElement.paused) {
-			videoDOMElement.play();
-		}
-		if (map.isAnistropicFiltering()) {
-			WebGL.enableAnisotropicFiltering(gl, texture);
-		}
+		loadData(gl);
+		
+		// stop rendering when movie ended
+		videoDOMElement.addEventListener("ended", function() {
+			window.cancelAnimationFrame(timer);
+		}, true);
+
+		// stop rendering when movie is paused
+		videoDOMElement.addEventListener("pause", function() {
+			window.cancelAnimationFrame(timer);
+		}, true);
+
+		// start rendering when movie starts playing
+		videoDOMElement.addEventListener("playing", function() {
+			map.render(false);
+		}, true);
+
+		// movie "seeked" to another time
+		videoDOMElement.addEventListener("seeked", function() {
+			if (videoDOMElement.paused) {
+				map.render(false);
+			}
+		}, true);
+	};
+
+	this.reloadData = function() {
+		this.clear();
+		loadData(gl);
 	};
 
 	this.reloadGeometry = function() {
-		geometry = WebGL.loadSphereGeometry(gl, map.getGeometryResolution());
-		if (map.isAnistropicFiltering()) {
-			WebGL.enableAnisotropicFiltering(gl, texture);
-		}
+		geometry = WebGL.loadSphereGeometry(gl, map.getNumberOfTrianglesAlongEquator());
 	};
 
 	this.resize = function(w, h) {
 		if (gl !== null) {
 			// http://www.khronos.org/registry/webgl/specs/1.0/#2.3
 			gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+		}
+	};
+
+	this.play = function() {
+		if (videoDOMElement.paused) {
+			videoDOMElement.play();
+		}
+	};
+
+	this.pause = function() {
+		if (!videoDOMElement.paused) {
+			videoDOMElement.pause();
 		}
 	};
 }
@@ -4481,7 +4617,8 @@ document.write(
 /*globals RasterLayer, VideoLayer, resizeCanvasElement, clone, TransformedProjection, TransformedLambertAzimuthal, ProjectionFactory, Stats */
 
 // FIXME
-var MERCATOR_LIMIT_1, MERCATOR_LIMIT_2;
+var MERCATOR_LIMIT_1,
+    MERCATOR_LIMIT_2;
 var MERCATOR_LIMIT_WEB_MAP_SCALE = 6;
 
 // distance of standard parallels from upper and lower border of map
@@ -4494,7 +4631,9 @@ var formatRatioLimit = 0.8;
 function mouseToCanvasCoordinates(e, parent) {
 	"use strict";
 	// FIXME there should be a better way for this
-	var node, x = e.clientX, y = e.clientY;
+	var node,
+	    x = e.clientX,
+	    y = e.clientY;
 
 	// correct for scrolled document
 	x += document.body.scrollLeft + document.documentElement.scrollLeft;
@@ -4511,86 +4650,90 @@ function mouseToCanvasCoordinates(e, parent) {
 	};
 }
 
-function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChangeListener) {
+function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChangeListener, stats) {
 	"use strict";
 
 	// zoom factor limits where projections change
-	var zoomLimit1 = 1.5, zoomLimit2 = 2, zoomLimit3 = 3, zoomLimit4 = 4, zoomLimit5 = 6,
+	var zoomLimit1 = 1.5,
+	    zoomLimit2 = 2,
+	    zoomLimit3 = 3,
+	    zoomLimit4 = 4,
+	    zoomLimit5 = 6,
 
 	// zoom factor used when the debug option "Zoom Map" is deselected
-	DEBUG_ZOOM_FACTOR = 0.5,
+	    DEBUG_ZOOM_FACTOR = 0.5,
 
 	// maximum zoom factor
-	MAX_ZOOM_FACTOR = 100,
+	    MAX_ZOOM_FACTOR = 100,
 
 	// minimum zoom factor
-	MIN_ZOOM_FACTOR = 0.05,
+	    MIN_ZOOM_FACTOR = 0.05,
 
 	// zoom factor relativ to canvas size. A value of 1 means that the map vertically fills the available canvas space.
-	zoomFactor = 0.95,
+	    zoomFactor = 0.95,
 
 	// if true, the center of the map and the position of standard parallels are drawn
-	debugDrawOverlayCanvas = false,
+	    debugDrawOverlayCanvas = false,
 
 	// if true, the map adjusts its scale
-	debugZoomToMap = true,
+	    debugZoomToMap = true,
 
 	// if true, a wireframe is rendered for raster layers
-	debugRenderWireframe = false,
+	    debugRenderWireframe = false,
 
 	// if true, the position and extent of the geometry for raster layer are adjusted
-	debugAdaptiveResolutionGrid = true,
+	    debugAdaptiveResolutionGrid = true,
 
 	// if true, raster images are projected with forward transformation, otherwise with an inverse transformation
-	debugForwardRasterProjection = true,
-	
+	    debugForwardRasterProjection = true,
+
 	// if true, mipMap is created for texture minification filtering
-	debugMipMap = true,
-		
+	    debugMipMap = true,
+
 	// if true, anisotropic filtering is used for texture sampling if available
-	debugAnisotropicFiltering = true,
-	
+	    debugAnisotropicFiltering = true,
+
 	// Latitude limit between clyindrical and conic projection at large scales
 	// Use cylindrical projection between the equator and cylindricalLowerLat
-	cylindricalLowerLat = 15 * Math.PI / 180,
+	    cylindricalLowerLat = 15 * Math.PI / 180,
 	// use transition between cylindricalUpperLat and cylindricalLowerLat
-	cylindricalUpperLat = 22 * Math.PI / 180,
+	    cylindricalUpperLat = 22 * Math.PI / 180,
 
 	// use azimuthal projection if central latitude is larger (for large scales)
-	polarUpperLat = 75 * Math.PI / 180,
+	    polarUpperLat = 75 * Math.PI / 180,
 	// use transition between polarLowerLat and polarUpperLat
-	polarLowerLat = 60 * Math.PI / 180,
+	    polarLowerLat = 60 * Math.PI / 180,
 
 	// longitude and latitude of the map center in radians
-	mapCenter = {
+	    mapCenter = {
 		lon0 : 0,
 		lat0 : 30 / 180 * Math.PI
 	},
 
-	// resolution of geometry for raster layer
-	geometryResolution = 500, smallScaleMapProjectionName = "Hammer",
+	// number of triangles along the equator in the tesselated sphere for forward raster projection
+	// the tesselated sphere has half as many triangles along the vertical axis from pole to pole
+	    trianglesAlongEquator = 500,
+
+	//
+	    smallScaleMapProjectionName = "Hammer",
 
 	// if true, oblique world projections can be created
-	rotateSmallScales = true,
+	    rotateSmallScales = true,
 
 	// if true, the equator snaps to its standard horizontal aspect when dragging
-	snapEquator = true,
-
-	// for measuring FPS
-	stats = new Stats();
-	//stats.setMode( 2 );
+	    snapEquator = true,
 
 	// FIXME
-	document.getElementById("FPS").appendChild(stats.domElement);
-
-	// FIXME should not be global
-	map = this;
+	    map = this;
 
 	var MERCATOR_TRANSITION_WIDTH = 0.75; ( function setupMercator() {
 			// FIXME: MERCATOR_LIMIT_1 and MERCATOR_LIMIT_2 are not valid when
 			// the small scale projection changes, as they are relative to the small-scale graticule height !?
 
-			var mercatorMapSize, smallScaleProjection, graticuleHeight, sf;
+			var mercatorMapSize,
+			    smallScaleProjection,
+			    graticuleHeight,
+			    sf;
 
 			// size of web mercator in pixels at web map scale where the transition to
 			// the web mercator projection occurs
@@ -4669,7 +4812,8 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 
 	// Compute scale factor such that the graticule fits vertically onto the canvas.
 	function referenceScaleFactor() {
-		var smallScaleProjection, graticuleHeight;
+		var smallScaleProjection,
+		    graticuleHeight;
 		smallScaleProjection = ProjectionFactory.getSmallScaleProjection(smallScaleMapProjectionName);
 		graticuleHeight = 2 * ProjectionFactory.halfCentralMeridianLengthOfSmallScaleProjection(smallScaleProjection);
 		return canvasHeight / graticuleHeight;
@@ -4677,7 +4821,9 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 
 	// invert the offset and map scale applied when rendering the map layers
 	this.canvasXYToUnscaledXY = function(x, y) {
-		var cx, cy, scale;
+		var cx,
+		    cy,
+		    scale;
 		cx = canvasWidth / 2;
 		cy = canvasHeight / 2;
 		x -= cx;
@@ -4702,7 +4848,11 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 
 	// FIXME seems to be broken: apply lon0?
 	this.lonLat2Canvas = function(lon, lat, proj) {
-		var dy, scale, centerX, centerY, pt = [];
+		var dy,
+		    scale,
+		    centerX,
+		    centerY,
+		    pt = [];
 
 		if (!proj) {
 			proj = map.updateProjection();
@@ -4726,7 +4876,10 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		// The graticule of the transformed Lambert azimuthal projection has an invard pointing wedge
 		// when w is between 0.5 and 1. To make sure this wedge is not visible, the zoom factor limit is adjusted
 		// where the transformed Lambert azimuthal projection is used.
-		var zoomLimit, isLandscape, mapTop, xy;
+		var zoomLimit,
+		    isLandscape,
+		    mapTop,
+		    xy;
 		zoomLimit = zoomLimit1;
 		isLandscape = (canvasHeight / canvasWidth) < formatRatioLimit;
 		if (!isLandscape) {
@@ -4804,12 +4957,17 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		var INC = 5,
 
 		// bounding box
-		bb = {
+		    bb = {
 			west : Number.MAX_VALUE,
 			south : Number.MAX_VALUE,
 			east : -Number.MAX_VALUE,
 			north : -Number.MAX_VALUE
-		}, x, y, lonlat, southPoleVisible, northPoleVisible;
+		},
+		    x,
+		    y,
+		    lonlat,
+		    southPoleVisible,
+		    northPoleVisible;
 
 		southPoleVisible = isSouthPoleVisible(projection);
 		northPoleVisible = isNorthPoleVisible(projection);
@@ -4898,12 +5056,13 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 	}
 
 
-	this.render = function(fastRender) {
+	this.render = function(fastRender, onlyRenderVideo) {
 		if (!Array.isArray(layers)) {
 			return;
 		}
-
-		stats.begin();
+		if (stats != undefined) {
+			stats.begin();
+		}
 
 		var projection = this.updateProjection();
 		var bb = visibleGeographicBoundingBoxCenteredOnLon0(projection);
@@ -4911,7 +5070,8 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		//Geometry projection is different then projection of the map. To create adaptive grid,
 		//right (geometry) bounding box needs to be defined and passed to the shaders.
 		//Geometry projections differs only in central latitude.
-		var poleLatitude = Math.PI / 2, geometryLat0 = 0;
+		var poleLatitude = Math.PI / 2,
+		    geometryLat0 = 0;
 		//cloning projection configurations
 		var geometryConf = clone(this.conf);
 
@@ -4953,17 +5113,25 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		var scale = refScaleFactor * ( debugZoomToMap ? zoomFactor : DEBUG_ZOOM_FACTOR);
 
 		var vectorContext = vectorCanvas.getContext('2d');
+		var renderVector = (onlyRenderVideo === undefined || !onlyRenderVideo);
 		vectorContext.setTransform(1, 0, 0, 1, 0, 0);
-		vectorContext.clearRect(0, 0, vectorCanvas.width, vectorCanvas.height);
+		if (renderVector) {
+			vectorContext.clearRect(0, 0, vectorCanvas.width, vectorCanvas.height);
+		}
 
 		// FIXME
-		var layerID, layer;
+		var layerID,
+		    layer;
 
 		for ( layerID = 0; layerID < layers.length; layerID += 1) {
+			layer = layers[layerID];
+			if ( typeof layer.isVisible === "function" && layer.isVisible() === false) {
+				continue;
+			}
+
 			//save context so that each layer can change drawing states
 			vectorContext.save();
 
-			layer = layers[layerID];
 			layer.visibleGeographicBoundingBoxCenteredOnLon0 = bb;
 			layer.visibleGeometryBoundingBoxCenteredOnLon0 = geometryBB;
 
@@ -4987,7 +5155,9 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 			layer.map = this;
 			layer.canvasWidth = canvasWidth;
 			layer.canvasHeight = canvasHeight;
-			layer.render(fastRender, debugZoomToMap);
+			if ( layer instanceof VideoLayer || renderVector) {
+				layer.render(fastRender, debugZoomToMap);
+			}
 
 			// restore drawing states
 			vectorContext.restore();
@@ -5070,7 +5240,9 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 			ctx.fillText(txt, canvasWidth - metrics.width - typeSize, canvasHeight - typeSize * 0.5);
 		}
 
-		stats.end();
+		if (stats !== undefined) {
+			stats.end();
+		}
 	};
 
 	this.resizeMap = function(w, h) {
@@ -5124,11 +5296,14 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 	}
 
 	function loadMapData() {
-		var layer, nLayers, i;
+		var layer,
+		    nLayers,
+		    i;
 
 		//  load map layer data
 		if (Array.isArray(layers)) {
-			for ( i = 0, nLayers = layers.length; i < nLayers; i += 1) {
+			for ( i = 0,
+			nLayers = layers.length; i < nLayers; i += 1) {
 				layer = layers[i];
 				if ( layer instanceof RasterLayer || layer instanceof VideoLayer) {
 					layer.canvas = rasterCanvas;
@@ -5146,6 +5321,34 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 			}
 		}
 	}
+
+	function playPauseVideo(play) {
+		var layer,
+		    i;
+
+		//  load map layer data
+		if (Array.isArray(layers)) {
+			for ( i = 0; i < layers.length; i += 1) {
+				layer = layers[i];
+				if ( layer instanceof VideoLayer) {
+					if (play) {
+						layer.play();
+					} else {
+						layer.pause();
+					}
+				}
+			}
+		}
+	}
+
+
+	this.playVideo = function() {
+		playPauseVideo(true);
+	};
+
+	this.pauseVideo = function() {
+		playPauseVideo(false);
+	};
 
 	var projection = this.updateProjection();
 
@@ -5175,7 +5378,8 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 	 * Calls clear() of all previous layers.
 	 */
 	this.setLayers = function(mapLayers) {
-		var i, layer;
+		var i,
+		    layer;
 		if (Array.isArray(layers)) {
 			for ( i = 0; i < layers.length; i += 1) {
 				layer = layers[i];
@@ -5186,6 +5390,21 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		}
 		layers = mapLayers;
 		loadMapData();
+	};
+
+	this.setLayerVisibility = function(layerName, visible) {
+		var i,
+		    layer;
+		if (Array.isArray(layers)) {
+			for ( i = 0; i < layers.length; i += 1) {
+				layer = layers[i];
+				if (layer.name === layerName) {
+					layer.visible = visible;
+					this.render();
+					return;
+				}
+			}
+		}
 	};
 
 	this.getLargeScalePolarUpperLat = function() {
@@ -5287,10 +5506,10 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		return debugMipMap;
 	};
 
-	this.setMipMap= function(mipMap) {
+	this.setMipMap = function(mipMap) {
 		debugMipMap = mipMap;
 	};
-	
+
 	this.isAnistropicFiltering = function() {
 		return debugAnisotropicFiltering;
 	};
@@ -5298,7 +5517,7 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 	this.setAnisotropicFiltering = function(anisotropicFiltering) {
 		debugAnisotropicFiltering = anisotropicFiltering;
 	};
-	
+
 	this.isEquatorSnapping = function() {
 		return snapEquator;
 	};
@@ -5324,36 +5543,46 @@ function AdaptiveMap(parent, canvasWidth, canvasHeight, layers, projectionChange
 		return parent;
 	};
 
-	this.getGeometryResolution = function() {
-		return geometryResolution;
+	this.getNumberOfTrianglesAlongEquator = function() {
+		return trianglesAlongEquator;
 	};
 
-	this.setGeometryResolution = function(resolution) {
-		var layer, nLayers, i;
-		
-		geometryResolution = resolution;
-		
-		if (Array.isArray(layers)) {
-			for ( i = 0, nLayers = layers.length; i < nLayers; i += 1) {
-				layer = layers[i];
-				if ( typeof layer.adjustTesselationDensity === 'function') {
-					layer.adjustTesselationDensity();
-				}
-			}
+	this.setNumberOfTrianglesAlongEquator = function(nTriangles) {
+		var layer,
+		    nLayers,
+		    i;
+
+		trianglesAlongEquator = nTriangles;
+		if (trianglesAlongEquator % 2 === 1) {
+			trianglesAlongEquator += 1;
 		}
-		this.render();
-	};
-
-	this.reloadGeometry = function() {
-		var layer, nLayers, i;
+		
 		if (Array.isArray(layers)) {
-			for ( i = 0, nLayers = layers.length; i < nLayers; i += 1) {
+			for ( i = 0,
+			nLayers = layers.length; i < nLayers; i += 1) {
 				layer = layers[i];
 				if ( typeof layer.reloadGeometry === 'function') {
 					layer.reloadGeometry();
 				}
 			}
 		}
+		this.render();
+	};
+
+	this.reloadData = function() {
+		var layer,
+		    nLayers,
+		    i;
+		if (Array.isArray(layers)) {
+			for ( i = 0,
+			nLayers = layers.length; i < nLayers; i += 1) {
+				layer = layers[i];
+				if ( typeof layer.reloadData === 'function') {
+					layer.reloadData();
+				}
+			}
+		}
+		this.render();
 	};
 }
 /*globals formatLatitude*/
@@ -8477,5 +8706,5 @@ ShpError.ERROR_UNDEFINED = 0;
 // a 'no data' error is thrown when the byte array runs out of data.
 ShpError.ERROR_NODATA = 1;
 
-var adaptiveCompositeMapBuildTimeStamp = "August 11, 2014 01:45:26 PM";
+var adaptiveCompositeMapBuildTimeStamp = "December 21, 2014 01:07:23 PM";
 		

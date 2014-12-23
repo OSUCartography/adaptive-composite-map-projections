@@ -59,10 +59,10 @@ uniform float albersN;
 uniform float albersC;
 uniform float albersRho0;
 
-// ? FIXME
+// canvas height times the map scale
 uniform vec2 scaleXY;
 
-// ? FIXME
+// half canvas width and half canvas height
 uniform vec2 dXY;
 
 uniform  sampler2D texture;
@@ -504,6 +504,11 @@ vec2 invProjectionMix(in vec2 xy) {
     const int MAX_LOOP = 25;
     
     float dx, dy;
+    
+    // FIXME functions called by invProjection may discard the fragment
+    // if xy is outside of the valid range. This will cause undefined
+    // map borders when the transformed Lambert azimuthal is used.
+    // How to best handle this case?
     vec2 inv1 = invProjection(xy, mix1ProjectionID);
     vec2 inv2 = invProjection(xy, mix2ProjectionID);
     
