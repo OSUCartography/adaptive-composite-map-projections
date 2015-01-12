@@ -77,8 +77,16 @@ $(window).load(function() {
 
 	var isTouchDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
 	    isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent),
+	    isIE = navigator.userAgent.indexOf('MSIE ') > -1 || navigator.userAgent.indexOf('Trident/') > -1,
 	    supportsHTMLVideo = !!document.createElement('video').canPlayType;
 
+	// IE does not compile our GLSL shaders. Hide map, display warning, and return.
+	if (isIE) {
+		$("#ieFailContainer").toggle();
+		$("#container").toggle();
+		return;
+	}
+	
 	// hide map if HTML5 video is not available, or if WebGL is not available.
 	// iPads should work with WebGL video texture, but they currently don't
 	if (isIOS || !WebGL.hasWebGL() || !supportsHTMLVideo) {
@@ -152,7 +160,8 @@ $(window).load(function() {
 			return "Map layers and movie resolution";
 		},
 		onChange : function(option, checked, select) {
-			var layerID, videoName = null,
+			var layerID,
+			    videoName = null,
 			    video,
 			    videoSource;
 			video = document.getElementById('video1');
@@ -431,5 +440,5 @@ $(window).load(function() {
 			slide : action
 		});
 	});
-	
+
 });

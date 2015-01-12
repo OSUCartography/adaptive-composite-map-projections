@@ -16,7 +16,7 @@ p, span {
 	pointer-events: auto;
 }
 
-#failContainer {
+#failContainer, #ieFailContainer {
 	display: none;
 	text-align: center;
 	margin: 0px;
@@ -25,10 +25,11 @@ p, span {
 	margin: 50px;
 }
 
-#failContainer p {
-	width: 400px;
-	margin-top: 30px;
-	margin-bottom: 30px;
+#failContainer p, #ieFailContainer p {
+	text-align: left;
+	width: 500px;
+	margin-top: 60px;
+	margin-bottom: 60px;
 	margin-left: auto;
     margin-right: auto;
 }
