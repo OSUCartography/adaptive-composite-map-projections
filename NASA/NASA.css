@@ -76,9 +76,20 @@ p, span {
 #infoContainer {
 	display:none;
 	position: absolute;
-	top: 45%;
+	top: 35%;
 	left: 50%;
 	margin-top: -100px;
+	margin-left: -200px;
+	padding:20px;
+	width: 400px;
+	text-align: center;
+	background-color: rgba(34,34,34,0.7);
+}
+
+#startInfoContainer {
+	position: absolute;
+	top: 10%;
+	left: 50%;
 	margin-left: -200px;
 	padding:20px;
 	width: 400px;
@@ -95,9 +106,8 @@ p, span {
 	margin-bottom: 0px;
 }
 
-#closeInfoButton {
-	padding-top: 20px;
-	padding-bottom: 10px;
+#closeInfoButton, #closeStartInfoButton{
+	padding-top: 10px;
 	font-size: 20px;
 	cursor: pointer;
 }

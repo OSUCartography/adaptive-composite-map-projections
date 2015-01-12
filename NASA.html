@@ -78,7 +78,7 @@
 		<div id="ieFailContainer">
 			<h1>A Year In The Life Of Earth's CO<sub>2</sub></h1>
 			<p>
-				This interactive map is currently not available for Internet Explorer. Please use a recent version of Firefox or Google Chrome, or 
+				This interactive map is currently not available for Internet Explorer. Please use a recent version of Firefox or Google Chrome, or
 				see the original version of the <a href="http://svs.gsfc.nasa.gov/goto?11719">carbon dioxide map</a> at the NASA Goddard Space Flight Center website.
 			</p>
 			<a href="http://svs.gsfc.nasa.gov/goto?11719 "><img src="NASA/still.png" alt="Map preview"></a>
@@ -88,6 +88,18 @@
 				<p>
 					<i id="spinningWheel" class="fa fa-circle-o-notch fa-spin"></i>
 				</p>
+			</div>
+
+			<div id="startInfoContainer" class="panel">
+				<p class="mouse">
+					Click and drag to adjust the center of the map.
+				</p>
+				<p class="mouse">
+					Use the scroll wheel or the slider to zoom in and out.
+				</p>
+				<!--<p>
+					<i id="closeStartInfoButton" class="fa fa-times" title="close"></i>
+				</p>-->
 			</div>
 
 			<div id="infoContainer" class="panel">
@@ -108,8 +120,16 @@
 				</p>
 				<p id="osu">
 					Interactive map by the <a href="http://cartography.oregonstate.edu/">Cartography and Geovisualization Group</a>, Oregon State University
+					<br/>Bernhard Jenny, Bojan Šavrič, Johannes Liem
 					<br/>
-					Video by <a href="http://svs.gsfc.nasa.gov/goto?11719">NASA Goddard Space Flight Center</a>
+					<br/>
+					Video by NASA Goddard Space Flight Center
+					<br/>
+					William M. Putman (NASA), Kayvon Sharghi (USRA), Aaron E. Lepsch (ADNET Systems, Inc.), Patrick Lynch (Wyle Information Systems)
+					<br/>
+					<br/>
+					<a href="http://svs.gsfc.nasa.gov/goto?11719">Read more</a> about this CO<sub>2</sub> video map.
+					<br/>
 					<br/>
 					Code on <a href="https://github.com/OSUCartography/adaptive-composite-map-projections">GitHub</a>
 					<br/>
@@ -145,9 +165,9 @@
 
 			<div id="headerContainer">
 				<h1>A Year In The Life Of Earth's CO<sub>2</sub></h1>
-				<p id="subtitle">
+				<!--<p id="subtitle">
 					An interactive version of the <a href="http://svs.gsfc.nasa.gov/goto?11719">carbon dioxide map by  NASA's Goddard Space Flight Center</a>.
-				</p>
+				</p>-->
 
 				<div id="controlContainer">
 					<div id="dateContainer">
@@ -337,7 +357,7 @@
 
 		<div id ="logoContainer">
 			<a href="http://cartography.oregonstate.edu/" title="Cartography and Geovisualization Group at Oregon State University">
-				<svg id="cartoGroupLogo" version="1.0" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+			<svg id="cartoGroupLogo" version="1.0" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
 			width="65px" height="65px" viewBox="0 0 72 72" style="enable-background:new 0 0 72 72;" xml:space="preserve">
 				<g>
 					<defs>
@@ -409,11 +429,10 @@
 					<path d="M57.566,53.047v-9.343h2.185c1.779,0,2.984,0.882,2.984,2.745c0,1.751-1.093,2.76-2.815,2.76h-1.065
 					v3.838H57.566z M58.841,48.159h0.812c1.177,0,1.751-0.532,1.751-1.709c0-1.232-0.715-1.695-1.905-1.695h-0.658V48.159z"/>
 				</g>
-				</svg>
-			</a>
+			</svg> </a>
 			<a href="http://svs.gsfc.nasa.gov/goto?11719" title="More about the NASA video">
-				<svg xmlns="http://www.w3.org/2000/svg" height="65px" width="78.54px" id="nasaLogo" version="1.0" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
-			 viewBox="0 0 290 240" style="enable-background:new 0 0 72 72;" xml:space="preserve">
+			<svg xmlns="http://www.w3.org/2000/svg" height="65px" width="78.54px" id="nasaLogo" version="1.0" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+			viewBox="0 0 290 240" style="enable-background:new 0 0 72 72;" xml:space="preserve">
 				<path d="m252.51,120c0,64.618-53.234,117.8-117.92,117.8-64.685,0-117.92-53.185-117.92-117.8,0-64.622,51.99-117.8,117.92-117.8,63.437,0,117.92,53.181,117.92,117.8" opacity="0.75" fill-rule="nonzero" fill="#1a5dad"/>
 				<path d="m161.19,182c50.379,20.724,41.636-31.647,14.782-71.747-15.22-22.718-35.07-41.645-47.59-50.78-41.513-30.298-67.14-11.922-37.826,47.83,9.4777,19.319,21.651,32.358,31.159,44.648,7.261,9.3828,21.404,14.081,16.422,18.534-5.6144,5.0207-19.209-17.124-19.209-17.124-10.04-12.11-19.61-25.03-29.473-42.76-22.535-40.499-19.286-81.833,21.503-63.828,34.615,15.288,67.678,58.166,80.971,88.616,6.1401,14.059,22.88,69.692-30.437,47.2" fill-rule="nonzero" fill="#FFF"/>
 				<path d="M4.526,154.92c22.163-14.76,43.176-24.29,78.935-36.1,50.249-16.6,88.069-27.758,134.47-51.082,20.77-10.438,56.81-33.847,69.7-54.198-3.86,7.876-15.81,23.206-21.22,29.987-62.96,78.833-197.07,74.363-261,112.21" fill-rule="nonzero" fill="#ee293d"/>
@@ -470,8 +489,7 @@
 				<path d="m19.515,145.62c-6.4536,3.1571-12.235,6.2768-17.14,9.3219l2.9846,1.0861c4.2896-2.6419,9.4399-5.3973,14.865-7.8259" fill-rule="nonzero" fill="#ee293d"/>
 				<path d="m53.587,205.28c-5.8995,5.1489-11.997,10.645-18.113,16.406l-0.27013,4.0706c5.5998-5.768,12.479-11.998,20.418-18.608" fill-rule="nonzero" fill="#ee293d"/>
 				<path d="m161.19,182c50.379,20.724,41.636-31.647,14.782-71.747-15.22-22.718-33.99-40.74-47.59-50.78-15.88-11.725-17.43-12.697-17.43-12.697,35.462,16.831,67.678,58.165,80.971,88.616,6.1401,14.059,22.88,69.692-30.437,47.2" fill-rule="nonzero" fill="#FFF"/>
-				</svg>
-			</a>
+			</svg> </a>
 		</div>
 	</body>
 </html>

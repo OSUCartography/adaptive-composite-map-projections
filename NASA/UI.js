@@ -86,7 +86,7 @@ $(window).load(function() {
 		$("#container").toggle();
 		return;
 	}
-	
+
 	// hide map if HTML5 video is not available, or if WebGL is not available.
 	// iPads should work with WebGL video texture, but they currently don't
 	if (isIOS || !WebGL.hasWebGL() || !supportsHTMLVideo) {
@@ -348,6 +348,7 @@ $(window).load(function() {
 
 	$('#infoButton').on("click", function(e) {
 		$('#infoContainer').toggle();
+		$('#startInfoContainer').hide();
 	});
 
 	$('#closeInfoButton').on("click", function(e) {
@@ -441,4 +442,18 @@ $(window).load(function() {
 		});
 	});
 
+	setTimeout(function() {
+		$("#startInfoContainer").fadeOut("slow", function() {
+			$("div.mydiv").remove();
+		});
+
+	}, 7000);
+	
+	$('#closeStartInfoButton').on("click", function(e) {
+		$('#startInfoContainer').hide();
+	});
+
+	$('#startInfoContainer').on("click", function(e) {
+		$('#startInfoContainer').hide();
+	});
 });
