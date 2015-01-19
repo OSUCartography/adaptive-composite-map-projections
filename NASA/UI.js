@@ -82,6 +82,7 @@ $(window).load(function() {
 
 	// IE does not compile our GLSL shaders. Hide map, display warning, and return.
 	if (isIE) {
+		document.getElementById("video1").pause();
 		$("#ieFailContainer").toggle();
 		$("#container").toggle();
 		return;
@@ -90,6 +91,7 @@ $(window).load(function() {
 	// hide map if HTML5 video is not available, or if WebGL is not available.
 	// iPads should work with WebGL video texture, but they currently don't
 	if (isIOS || !WebGL.hasWebGL() || !supportsHTMLVideo) {
+		document.getElementById("video1").pause();
 		showFail();
 		return;
 	}
@@ -447,7 +449,7 @@ $(window).load(function() {
 			$("div.mydiv").remove();
 		});
 
-	}, 7000);
+	}, 10000);
 	
 	$('#closeStartInfoButton').on("click", function(e) {
 		$('#startInfoContainer').hide();

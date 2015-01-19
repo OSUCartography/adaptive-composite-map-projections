@@ -486,7 +486,8 @@ vec2 invProjection(in vec2 xy, in float projectionID) {
 	}
     if (projectionID == -3.) {
 		return invLambertAzimuthalSouthPolar(xy);
-	}
+    }
+    
     /*
      if (projectionID == EPSG_MERCATOR) {
      return mercator(lon, lat);
@@ -495,7 +496,11 @@ vec2 invProjection(in vec2 xy, in float projectionID) {
      return lambertCylindricalTransverse(lon, lat);
      }
      */
-    discard;
+    
+    // FIXME discard;
+    
+    // make compiler happy
+    return xy;
 }
 
 vec2 invProjectionMix(in vec2 xy) {
@@ -547,11 +552,11 @@ void main(void) {
     xy.y -= falseNorthing;
 
     vec2 lonLat;
-	if (projectionID == MIXPROJECTION) {
-		lonLat = invProjectionMix(xy);
-	} else {
+//	if (projectionID == MIXPROJECTION) {
+//		lonLat = invProjectionMix(xy);
+//	} else {
 		lonLat = invProjection(xy, projectionID);
-	}
+//	}
     if (cosLatPole != 0.) {
         lonLat = transformSphere(lonLat);
     }

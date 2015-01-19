@@ -533,7 +533,8 @@ vec2 invProjectionMix(in vec2 xy) {
     }
     
     if (any(greaterThan(abs(lonLat), vec2(PI, HALFPI)))){
-        discard;
+        // discard does not work on Windows
+        return vec2(0., 0.);
     }
     return lonLat;
 }

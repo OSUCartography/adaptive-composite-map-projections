@@ -70,7 +70,7 @@ function Robinson() {"use strict";
 
 	this.getShaderUniforms = function() {
 		return {
-			"projectionID" : this.getID(),
+			"projectionID" : this.getID()
 		};
 	};
 
