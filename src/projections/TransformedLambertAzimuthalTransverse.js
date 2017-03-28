@@ -17,15 +17,27 @@ function TransformedLambertAzimuthalTransverse() {"use strict";
     this.initialize = function(conf, w) {
         lat0 = 0; // conf.lat0;
 
-		var lam1, phi1, p,  k, d, pCyl;
+		var lam1, phi1, p,  k, d, pCyl, w_;
 		
+		/*
+		linear blending
 		lam1 = w * Math.PI;
 		phi1 = w * Math.PI / 2;
 
 		// convert standard parallel to aspect ratio p
 		pCyl = Math.PI * Math.cos(lat0) * Math.cos(lat0);
 		p = pCyl + (1.4142135623730950488016887242097 - pCyl) * w;
-    
+    	*/
+    	
+    	// non-linear blending
+    	w_ = 1 - Math.cos(Math.PI / 2 * w);
+    	phi1 = w_ * Math.PI / 2;
+		lam1 = Math.atan(w) * 4;
+
+		// convert standard parallel to aspect ratio p
+		pCyl = Math.PI * Math.cos(lat0) * Math.cos(lat0);
+		p = pCyl + (Math.sqrt(2) - pCyl) * w_;
+		
         lam1 = Math.max(lam1, 0.0000001);
         phi1 = Math.max(phi1, 0.0000001);
 
