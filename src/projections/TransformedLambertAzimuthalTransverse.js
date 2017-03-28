@@ -24,7 +24,7 @@ function TransformedLambertAzimuthalTransverse() {"use strict";
 
 		// convert standard parallel to aspect ratio p
 		pCyl = Math.PI * Math.cos(lat0) * Math.cos(lat0);
-		p = pCyl + (1.5 - pCyl) * w;
+		p = pCyl + (1.4142135623730950488016887242097 - pCyl) * w;
     
         lam1 = Math.max(lam1, 0.0000001);
         phi1 = Math.max(phi1, 0.0000001);
