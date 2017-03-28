@@ -1,4 +1,4 @@
-/* Build Time: January 19, 2015 02:00:24 PM */
+/* Build Time: March 28, 2017 08:40:07 PM */
 /*globals LambertCylindricalEqualArea, ProjectionFactory */
 function MapEvents(map) {"use strict";
 
@@ -8134,7 +8134,7 @@ function TransformedLambertAzimuthalTransverse() {"use strict";
 
 		// convert standard parallel to aspect ratio p
 		pCyl = Math.PI * Math.cos(lat0) * Math.cos(lat0);
-		p = pCyl + (1.5 - pCyl) * w;
+		p = pCyl + (1.4142135623730950488016887242097 - pCyl) * w;
     
         lam1 = Math.max(lam1, 0.0000001);
         phi1 = Math.max(phi1, 0.0000001);
@@ -8717,5 +8717,5 @@ ShpError.ERROR_UNDEFINED = 0;
 // a 'no data' error is thrown when the byte array runs out of data.
 ShpError.ERROR_NODATA = 1;
 
-var adaptiveCompositeMapBuildTimeStamp = "January 19, 2015 02:00:24 PM";
+var adaptiveCompositeMapBuildTimeStamp = "March 28, 2017 08:40:07 PM";
 		

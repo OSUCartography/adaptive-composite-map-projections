@@ -2,6 +2,12 @@
 	<head>
 		<!-- expires immediately -->
 		<meta charset="utf-8" />
+	
+		<!-- preload large image for raster layer -->
+		<script type="text/javascript">
+			var rasterLayerImage = new Image();
+			rasterLayerImage.src = 'data_layers/NE_4096x2048.jpg';
+		</script>
 
 		<link rel="icon" href="http://cartography.oregonstate.edu/favicon.ico"  type="image/x-icon" />
 		<link rel="shortcut icon" href="http://cartography.oregonstate.edu/favicon.ico" type="image/x-icon" />
@@ -16,7 +22,7 @@
 		<link href='http://fonts.googleapis.com/css?family=Open+Sans:400italic,400,300,600&subset=latin' rel='stylesheet' type='text/css'>
 
 		<script type="text/javascript" src="lib/hammer.min.js"></script>
-		<script type="text/javascript" src="lib/modestmaps/modestmaps.js"></script>
+		<script type="text/javascript" src="lib/modestmaps/modestmaps.min.js"></script>
 		<script type="text/javascript" src="lib/wax.mm.min.js"></script>
 		<script type="text/javascript" src="lib/stats.min.js"></script>
 
@@ -31,8 +37,8 @@
 
 		<!-- jQuery local-->
 		<link rel="stylesheet" href="lib/jquery/ui/1.10.4/themes/smoothness/jquery-ui.css" />
-		<script src="lib/jquery/jquery-2.1.0.js"></script>
-		<script src="lib/jquery/ui/1.10.4/jquery-ui.js"></script>
+		<script src="lib/jquery/jquery-2.1.0.min.js"></script>
+		<script src="lib/jquery/ui/1.10.4/jquery-ui.min.js"></script>
 
 		<!-- WebGL utilities -->
 		<script type="text/javascript" src="lib/J3DI.js"></script>
@@ -46,7 +52,28 @@
 
 		<link rel="stylesheet" href="css/AdaptiveMap.css">
 		<script type="text/javascript" src="UI.js"></script>
+		
+		<!--
+		<script>
+			(function(i, s, o, g, r, a, m) {
+				i['GoogleAnalyticsObject'] = r;
+				i[r] = i[r] ||
+				function() {
+					(i[r].q = i[r].q || []).push(arguments)
+				}, i[r].l = 1 * new Date();
+				a = s.createElement(o),
+				m = s.getElementsByTagName(o)[0];
+				a.async = 1;
+				a.src = g;
+				m.parentNode.insertBefore(a, m)
+			})(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
 
+			ga('create', 'UA-61533226-1', 'auto');
+			ga('send', 'pageview');
+
+		</script>
+		-->
+		
 	</head>
 	<body>
 		<div id ="logoContainer">
@@ -127,9 +154,11 @@
 						<select id="mapSelectionMenu">
 							<!--<option>Silhouette</option>-->
 							<option>Natural Earth Raster</option>
+							<!--
 							<option>Modeled Winds Video (NASA GSFC, Nov. 2007)</option>
 							<option>Surface Temperatures Video (The Dark Sky Company, Nov. 1 to Nov. 7 2013)</option>
 							<option>Indian Ocean Tsunami Model Video (NOAA Center for Tsunami Research, USGS)</option>
+							-->
 							<option>Graticule</option>
 							<option>Black Raster</option>
 						</select>
@@ -281,6 +310,7 @@
 					</p>
 				</div>
 			</div>
+			<!--
 			<video id="video1" class="video" controls muted loop preload="auto">
 				<source src="data_layers/video/wind.mp4" type="video/mp4">
 				<source src="data_layers/video/wind.ogg" type="video/ogg">
@@ -296,6 +326,7 @@
 				<source src="data_layers/video/tsunami.ogg" type="video/ogg">
 				Your browser doesn't support HTML5 video in MP4 with H.264.
 			</video>
+			-->
 		</div><!-- container -->
 	</body>
 </html>

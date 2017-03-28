@@ -408,7 +408,7 @@ function getLayers(map) { "use strict";
     /**
      * Natural Earth Raster
      */
-    layers = [new RasterLayer("data_layers/NE_8192x4096.jpg"), // NE_16384x8192.jpg"), // project-quicksilver.jpg"), //NE_8192x4096.jpg"),
+    layers = [new RasterLayer("data_layers/NE_4096x2048.jpg"),
 
     new Graticule({
         strokeStyle : '#444',
@@ -442,7 +442,7 @@ function getLayers(map) { "use strict";
         globalAlpha : 0.5
     })];
 
-    maps.push(layers);
+    //maps.push(layers);
 
     /**
      * Video2
@@ -461,7 +461,7 @@ function getLayers(map) { "use strict";
         globalAlpha : 0.5
     })];
 
-    maps.push(layers);
+    //maps.push(layers);
 
     /**
      * Video3
@@ -480,7 +480,7 @@ function getLayers(map) { "use strict";
         globalAlpha : 0.5
     })];
 
-    maps.push(layers);    
+    //maps.push(layers);    
 
     /**
      * Graticule only

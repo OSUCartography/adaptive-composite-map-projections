@@ -8,7 +8,7 @@ $(window).load(function() {
 	var slippyMap, diagram;
 
 	function updateSlippyMap() {
-		var w, h, centerLon, centerLat, webMapScale;
+		var w, h, centerLon, centerLat, webMapScale, zoom;
 
 		if ( typeof map === 'undefined' || typeof slippyMap === 'undefined') {
 			return;
@@ -20,7 +20,8 @@ $(window).load(function() {
 		resizeCanvasElement(document.getElementById('slippyMap'), w, h);
 
 		// allow pre-loading at smaller scales
-		if (map.getZoomFactor() < MERCATOR_LIMIT_WEB_MAP_SCALE - 2) {
+		zoom = map.getZoomFactor();
+		if (zoom < 6 || zoom > 8) {
 			return;
 		}
 

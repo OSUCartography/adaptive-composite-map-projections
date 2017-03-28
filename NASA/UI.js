@@ -71,17 +71,37 @@ function showFail() {
 	$("#container").toggle();
 }
 
+function iOSversion() {
+	if (/iP(hone|od|ad)/.test(navigator.platform)) {
+		// supports iOS 2.0 and later: <http://bit.ly/TJjs1V>
+		var v = (navigator.appVersion).match(/OS (\d+)_(\d+)_?(\d+)?/);
+		return [parseInt(v[1], 10), parseInt(v[2], 10), parseInt(v[3] || 0, 10)];
+	}
+	return 0;
+}
+
+function noCrossOrigin() {
+	var src = document.getElementById('videoSourceMP4').src;
+	var mp4FileName = src.substring(src.lastIndexOf("/") + 1, src.length);
+	document.getElementById('videoSourceMP4').src = "NASA/" + mp4FileName;
+	document.getElementById('video1').removeAttribute('crossorigin');
+}
+
 
 $(window).load(function() {
 	"use strict";
 
 	var isTouchDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
 	    isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent),
+	    isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0,
 	    isIE = navigator.userAgent.indexOf('MSIE ') > -1 || navigator.userAgent.indexOf('Trident/') > -1,
+	    isEdge = navigator.userAgent.indexOf("Edge") > -1,
+	// http://stackoverflow.com/questions/7944460/detect-safari-browser
+	    isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent),
 	    supportsHTMLVideo = !!document.createElement('video').canPlayType;
 
 	// IE does not compile our GLSL shaders. Hide map, display warning, and return.
-	if (isIE) {
+	if (isIE || isEdge) {
 		document.getElementById("video1").pause();
 		$("#ieFailContainer").toggle();
 		$("#container").toggle();
@@ -89,11 +109,30 @@ $(window).load(function() {
 	}
 
 	// hide map if HTML5 video is not available, or if WebGL is not available.
-	// iPads should work with WebGL video texture, but they currently don't
-	if (isIOS || !WebGL.hasWebGL() || !supportsHTMLVideo) {
+	// iOS version 9 or higher required for WebGL video texture
+	if ((isIOS && iOSversion() <= 8) || !WebGL.hasWebGL() || !supportsHTMLVideo) {
 		document.getElementById("video1").pause();
 		showFail();
 		return;
+	}
+
+	// Older versions of Safari do not support cross-origin video texture in WebGL on OSX 10.10 and earlier (and also iOS)
+	// http://krpano.com/ios/bugs/ios8-webgl-video-cors/
+	// use slow same-origin videos on Safari on OS X 10.10 and earlier
+	if (isIOS) {
+		noCrossOrigin();
+	} else if (isMac && isSafari) {
+		var osXVersion = /Mac OS X (10[\.\_\d]+)/.exec(navigator.userAgent)[1];
+		osXVersion = osXVersion.split("_")[1];
+		if (osXVersion <= 10) {
+			noCrossOrigin();
+		}
+	}
+
+	// video autoplay is not available on iOS
+	if (isIOS) {
+		$("#ioSStartInfo").toggle();
+		$("#closeStartInfoButton").toggle();
 	}
 
 	function updateZoomSlider() {
@@ -126,16 +165,21 @@ $(window).load(function() {
 	}
 
 	function projectionChangeListener(map) {
+		//console.log(map.updateProjection().toString());
 		updateZoomSlider();
 	}
 
 	function changeVideoSource(videoSource) {
 		var video = document.getElementById('video1');
+		var src = document.getElementById('videoSourceMP4').src;
+		var root = src.substring(0, src.lastIndexOf("/") + 1);
+		src = root + videoSource;
 
 		// http://stackoverflow.com/questions/12151606/setattribute-and-video-src-for-changing-video-tag-source-not-working-in-ie9
 		video.pause();
-		document.getElementById('videoSourceMP4').src = videoSource + ".mp4";
-		document.getElementById('videoSourceWEBM').src = videoSource + ".webm";
+		document.getElementById('videoSourceMP4').src = src + ".mp4";
+		document.getElementById('videoSourceWEBM').src = src + ".webm";
+		video.setAttribute('crossorigin', 'anonymous');
 		video.load();
 		playAndUpdateGUI();
 	}
@@ -200,7 +244,7 @@ $(window).load(function() {
 				}
 			}
 			if (videoName !== null) {
-				changeVideoSource("NASA/" + videoName);
+				changeVideoSource(videoName);
 			} else {
 				// change layer visibility
 				if (map !== undefined) {
@@ -235,6 +279,10 @@ $(window).load(function() {
 
 	$("#dial").knob({
 		height : 120,
+
+		'mousemove' : function(v) {
+			console.log("move");
+		},
 
 		// called when the mouse is released, but also when
 		// trigger() is called after each video timeupdate event
@@ -292,6 +340,11 @@ $(window).load(function() {
 				// segmented outter circle
 				this.g.lineWidth = outterLineWidth;
 				this.g.globalAlpha = "1";
+				// increase line width if mouse is over the canvas
+				if ($("#dial").data("mouseover") === true) {
+					this.g.lineWidth *= 2.5;
+				}
+
 				this.g.strokeStyle = this.o.fgColor;
 				this.g.lineCap = 'butt';
 				for ( i = 0; i < 12; i = i + 1) {
@@ -303,6 +356,7 @@ $(window).load(function() {
 				}
 
 				// previous value arc
+				this.g.globalAlpha = "1";
 				this.g.lineWidth = this.lineWidth;
 				if (this.o.displayPrevious) {
 					pa = this.arc(this.v);
@@ -321,6 +375,13 @@ $(window).load(function() {
 				return false;
 			}
 		}
+	});
+
+	// set flag if mouse is over dial control
+	$("#dialContainer").hover(function() {
+		$("#dial").data("mouseover", true);
+	}, function() {
+		$("#dial").data("mouseover", false);
 	});
 
 	// make heavily styled elements visible after they have been configured
@@ -421,7 +482,8 @@ $(window).load(function() {
 	});
 
 	if (isTouchDevice) {
-		$(".mouse").hide();
+		$(".mouse").toggle();
+		$(".touch").toggle();
 	}
 
 	// add a zoom slider
@@ -444,18 +506,25 @@ $(window).load(function() {
 		});
 	});
 
-	setTimeout(function() {
-		$("#startInfoContainer").fadeOut("slow", function() {
-			$("div.mydiv").remove();
-		});
+	// fade out start info after a while, but not on iOS, where the user needs to tap to play video
+	/*if (isIOS === false) {
+		setTimeout(function() {
+			$("#startInfoContainer").fadeOut("slow", function() {
+				$("div.mydiv").remove();
+			});
 
-	}, 10000);
-	
+		}, 10000);
+	}*/
+
 	$('#closeStartInfoButton').on("click", function(e) {
 		$('#startInfoContainer').hide();
 	});
 
 	$('#startInfoContainer').on("click", function(e) {
 		$('#startInfoContainer').hide();
+		// video play must be started by user on iOS
+		if (isIOS) {
+			playAndUpdateGUI();
+		}
 	});
 });

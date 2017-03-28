@@ -1,12 +1,9 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 	<head>
-		<meta name="description" content="A colorful, narrated and interactive video map with adjustable map projection by NASA and Oregon State University.">
 		<!-- expires immediately while developing -->
-		<!--
 		<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 		<meta http-equiv="Pragma" content="no-cache" />
 		<meta http-equiv="Expires" content="0" />
-		-->
 
 		<meta charset="utf-8" />
 
@@ -17,7 +14,7 @@
 		<!-- stop doubletap from zooming, and let the multitouch gestures work with Hammer.js. -->
 		<meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1" />
 
-		<title>A Year in the Life of Earth's CO&#8322;</title>
+		<title>NASA: A Year In The Life Of Earth's CO2</title>
 
 		<!--Google font directory CSS link to embed the font-->
 		<link href='https://fonts.googleapis.com/css?family=Open+Sans:400italic,400,300,600&subset=latin' rel='stylesheet' type='text/css'>
@@ -40,7 +37,7 @@
 
 		<!-- jQuery local-->
 		<link rel="stylesheet" href="lib/jquery/ui/1.10.4/themes/smoothness/jquery-ui.css" />
-		<script src="lib/jquery/jquery-2.1.0.min.js"></script>
+		<script src="lib/jquery/jquery-2.1.0.js"></script>
 		<script src="lib/jquery/ui/1.10.4/jquery-ui.js"></script>
 		<!--
 		<link rel="stylesheet" type="text/css" href="NASA/jui_dropdown/jquery.jui_dropdown.css">
@@ -63,969 +60,8 @@
 		<script src="https://www.khronos.org/registry/webgl/sdk/debug/webgl-debug.js"></script>
 		-->
 
-		<style>
-			body {
-				background-color: #222;
-				font-family: 'Open Sans', sans-serif, FontAwesome;
-				text-rendering: optimizeLegibility;
-				margin: 0px;
-				color: #ccc;
-				text-shadow: 2px 2px 10px #222;
-			}
-
-			p, span {
-				font-family: 'Open Sans', sans-serif, FontAwesome;
-				font-size: 14px;
-				font-weight: normal;
-				text-rendering: optimizeLegibility;
-				margin: 0;
-				pointer-events: auto;
-			}
-
-			#failContainer, #ieFailContainer {
-				display: none;
-				text-align: center;
-				margin: 0px;
-				top: 0;
-				left: 0;
-				margin: 50px;
-			}
-
-			#failContainer p, #ieFailContainer p {
-				text-align: left;
-				width: 500px;
-				margin-top: 60px;
-				margin-bottom: 60px;
-				margin-left: auto;
-				margin-right: auto;
-			}
-
-			#container {
-				position: relative;
-				margin: 0px;
-				width: 100%;
-				height: 100%;
-			}
-
-			#adaptiveMap {
-				width: 100%;
-				height: 100%;
-			}
-
-			.panel {
-				z-index: 50;
-				background-color: rgba(34,34,34,0.5);
-				border-width: 1px;
-				border-radius: 6px;
-				border-color: #F37321;
-				border-style: solid;
-			}
-
-			#spinningWheelContainer {
-				position: absolute;
-				top: 50%;
-				left: 50%;
-				margin-top: -40px;
-				margin-left: -40px;
-				padding-top: 30px;
-				width: 80px;
-				height: 80px;
-				text-align: center;
-				border-radius: 40px;
-			}
-
-			#spinningWheel {
-				font-size: 20px;
-				line-height: 20px;
-			}
-
-			#infoContainer, #awardsContainer {
-				display: none;
-				position: absolute;
-				top: 35%;
-				left: 50%;
-				margin-top: -100px;
-				margin-left: -250px;
-				padding: 20px;
-				width: 500px;
-				text-align: center;
-				background-color: rgba(34,34,34,0.9);
-			}
-			
-			#awardsList li {
-				margin-left: 12px;
-				margin-bottom: 12px;
-				text-align: left;
-			}
-			
-			#infoTitleIcon, #awardsTitleIcon {
-				font-size: 20px;
-			}
-			
-			#infoTitleIcon:hover, #awardsTitleIcon:hover {
-				color: inherit;
-			}
-			
-			#awardsContainer ul .fa:hover {
-				color: inherit;
-			}
-
-			#startInfoContainer {
-				position: absolute;
-				top: 27%;
-				left: 50%;
-				margin-left: -250px;
-				padding: 20px;
-				width: 500px;
-				text-align: center;
-				background-color: rgba(34,34,34,0.7);
-			}
-
-			#infoContainer p, #awardsContainer p {
-				font-weight: normal;
-				margin-bottom: 20px;
-			}
-
-			#infoContainer p:last-child, #awardsContainer p:last-child {
-				margin-bottom: 0px;
-			}
-
-			#closeInfoButton, #closeStartInfoButton, #closeAwardsButton {
-				padding-top: 10px;
-				font-size: 20px;
-				cursor: pointer;
-			}
-
-			.buttonContainer {
-				text-align: center;
-				cursor: pointer;
-			}
-			
-			#infoButton, #awardsButton, #paperButton {
-				font-size: 20px;
-				padding: 8px;
-				cursor: pointer;
-				background-color: rgba(34,34,34,0.3);
-				border-radius: 4px;
-				margin-bottom: 3px;
-			}
-
-			#mapLayersButtonContainer {
-				display: none;
-				text-align: center;
-				cursor: pointer;
-				text-shadow: none;
-			}
-
-			.btn-link {
-				background-color: rgba(34,34,34,0.3);
-				border-radius: 4px;
-				font-size: 20px;
-				padding: 8px;
-				border: 0px;
-				line-height: 20px;
-			}
-
-			.open > .btn-link, .btn-link {
-				color: #ccc;
-			}
-
-			.btn-link:hover {
-				color: #F37321;
-				background-color: rgba(34,34,34,0.3);
-				border-radius: 4px;
-			}
-
-			.dropdown-menu > .active > a {
-				background-color: lightgray;
-			}
-
-			.dropdown-menu > .active > a:hover {
-				background-color: gray;
-			}
-
-			.btn-default:hover {
-				background-color: rgba(34,34,34,0.5);
-				color: #F37321;
-				border-color: #DA5520;
-			}
-
-			.multiselect-group {
-				color: #222;
-				text-shadow: none;
-			}
-
-			#cartoGroupLogo {
-				margin-top: 12px;
-				pointer-events: none;
-			}
-
-			circle {
-				pointer-events: auto;
-			}
-
-			.nav_container {
-				margin: 20px 30px 10px 30px;
-				display: inline-block;
-			}
-
-			.nav_menu {
-				position: absolute;
-				width: 240px !important;
-				margin-top: 3px !important;
-			}
-
-			#day {
-				font-size: 14px;
-				line-height: 14px;
-				margin-top: 26px;
-				display: inline-block;
-				font-weight: 600;
-			}
-			#month {
-				font-size: 26px;
-				line-height: 30px;
-				font-weight: 600;
-			}
-			#year {
-				font-size: 14px;
-				display: inline-block;
-				margin-top: 4px;
-				font-weight: 600;
-			}
-			.fa:hover {
-				color: #DA5520;
-			}
-			a .fa {
-				color: #ccc;;
-			}
-			#volumeToggle {
-				padding: 8px;
-				font-size: 125%;
-				cursor: pointer;
-				text-align: left;
-				background-color: rgba(34,34,34,0.3);
-				border-radius: 4px;
-			}
-
-			#pausePlayButton {
-				padding: 8px;
-				font-size: 125%;
-				cursor: pointer;
-				background-color: rgba(34,34,34,0.3);
-				border-radius: 4px;
-			}
-
-			.fa-fw {
-				text-align: center;
-				width: 1.7em;
-			}
-
-			#iOSStartButton {
-				font-size: 170%;
-				margin-top: 10px;
-				margin-bottom: 10px;
-				color: #DA5520;
-			}
-
-			#ioSStartInfo {
-				display: none;
-			}
-
-			#map-and-zoom-slider {
-				z-index: 0;
-				position: relative;
-				width: 100%;
-				height: 100%;
-				overflow: hidden;
-			}
-
-			#zoom-Slider-Container {
-				z-index: 1;
-				position: absolute;
-				top: 0;
-				right: 0;
-				z-index: 10;
-				padding-right: 5px;
-			}
-			#zoom-slider {
-				margin: 15px;
-				height: 120px;
-				width: 8px;
-			}
-
-			.ui-slider .ui-slider-handle {
-				height: 16px;
-				width: 16px;
-			}
-
-			#headerContainer {
-				position: absolute;
-				z-index: 2;
-				top: 0;
-				left: 0;
-				margin-left: 20px;
-				margin-top: 25px;
-				pointer-events: none;
-			}
-
-			#controlContainer {
-				display: none;
-				position: relative;
-				width: 120px;
-				text-align: center;
-				pointer-events: auto;
-				margin-top: 10px;
-				z-index: 100;
-			}
-
-			#dateContainer, dialContainer {
-				position: absolute;
-				width: 100%;
-				height: 100%;
-				top: 0;
-				left: 0;
-			}
-
-			#dateContainer {
-				z-index: 10;
-				pointer-events: none;
-				cursor: move;
-			}
-
-			#dialContainer {
-				cursor: pointer;
-			}
-
-			#videoControls {
-				width: 120px;
-				text-align: center;
-				pointer-events: auto;
-			}
-
-			#logoContainer {
-				z-index: 4;
-				position: absolute;
-				bottom: 0;
-				left: 0;
-				margin-left: 20px;
-				margin-bottom: 11px;
-				float: left;
-			}
-
-			#legendContainer {
-				z-index: 4;
-				position: absolute;
-				bottom: 0;
-				right: 0;
-				margin-right: 6px;
-				margin-bottom: 13px;
-			}
-
-			#monoxideLegend {
-				margin-left: 130px;
-			}
-
-			.legend {
-				margin-top: 24px;
-				float: right;
-				margin-left: 18px;
-				background-color: rgba(34,34,34,0.5);
-				padding: 6px;
-				border-radius: 4px;
-			}
-
-			.legendLabel, #legendContainer div p {
-				font-size: 14px;
-				line-height: 14px;
-				font-weight: 600;
-				margin-left: 14px;
-				margin-bottom: 6px;
-				fill: #ccc;
-			}
-
-			.colorRamp {
-				cursor: move;
-			}
-
-			.units {
-				font-size: 11px;
-				font-weight: 600;
-			}
-
-			a, a:visited, a:hover, a:active {
-				color: #DA5520;
-				text-decoration: none;
-			}
-
-			h1 {
-				color: #ccc;
-				font-family: 'Open Sans', sans-serif;
-				font-size: 26px;
-				font-weight: 400;
-				text-rendering: optimizeLegibility;
-				line-height: 26px;
-				pointer-events: auto;
-				padding-bottom: 4px;
-				margin: 0;
-			}
-
-			#resizable_map_container {
-			}
-
-			#video1 {
-				display: none;
-			}
-
-			#animate {
-				width: 80px;
-				margin-top: 10px;
-				margin-bottom: 10px;
-			}
-			#stopAnimate {
-				width: 80px;
-				margin-top: 10px;
-				margin-bottom: 10px;
-			}
-
-			.touch {
-				display: none;
-			}
-		</style>
-
-		<script type="text/javascript">
-			var map,
-			    INITIAL_MAP_ZOOM = 0.55;
-
-			function log(str) {
-				"use strict";
-			}
-
-			function isPauseButtonPressed() {
-				"use strict";
-				var paused = $('#pausePlayButton').attr("class").indexOf("fa-play") !== -1;
-				return paused;
-			}
-
-			function playAndUpdateGUI() {
-				"use strict";
-				var vid = document.getElementById("video1");
-				log("start");
-
-				// if current time is at end, start from beginning
-				if (vid.currentTime > 0 && vid.currentTime === vid.duration) {
-					vid.currentTime = 0;
-				}
-				if (vid.paused) {
-					vid.play();
-				}
-				$('#pausePlayButton').removeClass('fa-play');
-				$('#pausePlayButton').addClass('fa-pause');
-			}
-
-			function pauseAndUpdateGUI() {
-				"use strict";
-				var vid = document.getElementById("video1");
-				log("pause");
-				vid.pause();
-				$('#pausePlayButton').removeClass('fa-pause');
-				$('#pausePlayButton').addClass('fa-play');
-			}
-
-			function togglePlayPause() {
-				"use strict";
-				var vid = document.getElementById("video1");
-				if (vid.paused) {
-					playAndUpdateGUI();
-				} else {
-					pauseAndUpdateGUI();
-				}
-			}
-
-			function updateDate(day) {
-				"use strict";
-				if (isNaN(day)) {
-					day = 1;
-				}
-				// the duration of the video corresponds to 1 year
-				// month is zero based, day is one based
-				var d = new Date(2006, 0, day),
-				// months names for dispaly
-				    m_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-				document.getElementById('day').innerHTML = d.getDate();
-				document.getElementById('month').innerHTML = m_names[d.getMonth()];
-				document.getElementById('year').innerHTML = d.getFullYear();
-			}
-
-			function showFail() {
-				"use strict";
-				$("#failContainer").toggle();
-				$("#container").toggle();
-			}
-
-			function iOSversion() {
-				if (/iP(hone|od|ad)/.test(navigator.platform)) {
-					// supports iOS 2.0 and later: <http://bit.ly/TJjs1V>
-					var v = (navigator.appVersion).match(/OS (\d+)_(\d+)_?(\d+)?/);
-					return [parseInt(v[1], 10), parseInt(v[2], 10), parseInt(v[3] || 0, 10)];
-				}
-				return 0;
-			}
-
-			function noCrossOrigin() {
-				var src = document.getElementById('videoSourceMP4').src;
-				var mp4FileName = src.substring(src.lastIndexOf("/") + 1, src.length);
-				document.getElementById('videoSourceMP4').src = "NASA/" + mp4FileName;
-				document.getElementById('video1').removeAttribute('crossorigin');
-			}
-
-
-			$(window).load(function() {
-				"use strict";
-
-				var isTouchDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
-				    isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent),
-				    isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0,
-				    isIE = navigator.userAgent.indexOf('MSIE ') > -1 || navigator.userAgent.indexOf('Trident/') > -1,
-				    isEdge = navigator.userAgent.indexOf("Edge") > -1,
-				// http://stackoverflow.com/questions/7944460/detect-safari-browser
-				    isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent),
-				    supportsHTMLVideo = !!document.createElement('video').canPlayType;
-
-				// IE does not compile our GLSL shaders. Hide map, display warning, and return.
-				if (isIE || isEdge) {
-					document.getElementById("video1").pause();
-					$("#ieFailContainer").toggle();
-					$("#container").toggle();
-					return;
-				}
-
-				// hide map if HTML5 video is not available, or if WebGL is not available.
-				// iOS version 9 or higher required for WebGL video texture
-				if ((isIOS && iOSversion() <= 8) || !WebGL.hasWebGL() || !supportsHTMLVideo) {
-					document.getElementById("video1").pause();
-					showFail();
-					return;
-				}
-
-				// Older versions of Safari do not support cross-origin video texture in WebGL on OSX 10.10 and earlier (and also iOS)
-				// http://krpano.com/ios/bugs/ios8-webgl-video-cors/
-				// use slow same-origin videos on Safari on OS X 10.10 and earlier
-				if (isIOS) {
-					noCrossOrigin();
-				} else if (isMac && isSafari) {
-					var osXVersion = /Mac OS X (10[\.\_\d]+)/.exec(navigator.userAgent)[1];
-					osXVersion = osXVersion.split("_")[1];
-					if (osXVersion <= 10) {
-						noCrossOrigin();
-					}
-				}
-
-				// video autoplay is not available on iOS
-				if (isIOS) {
-					$("#ioSStartInfo").toggle();
-					$("#closeStartInfoButton").toggle();
-				}
-
-				function updateZoomSlider() {
-					try {
-						var mapScale = Math.round(map.getZoomFactor() * 100);
-						if ($("#zoom-slider").slider('value') !== mapScale) {
-							$("#zoom-slider").slider({
-								value : mapScale
-							});
-						}
-
-						if ($("#zoom-slider").slider('value') > 100) {
-							$('#subtitle').animate({
-								opacity : 0
-							}, {
-								queue : false,
-								duration : 1000
-							});
-						} else {
-							$('#subtitle').animate({
-								opacity : 1
-							}, {
-								queue : false,
-								duration : 1000
-							});
-						}
-					} catch (ignore) {
-						// FIXME is called before the slider is initialized
-					}
-				}
-
-				function projectionChangeListener(map) {
-					//console.log(map.updateProjection().toString());
-					updateZoomSlider();
-				}
-
-				function changeVideoSource(videoSource) {
-					var video = document.getElementById('video1');
-					var src = document.getElementById('videoSourceMP4').src;
-					var root = src.substring(0, src.lastIndexOf("/") + 1);
-					src = root + videoSource;
-
-					// http://stackoverflow.com/questions/12151606/setattribute-and-video-src-for-changing-video-tag-source-not-working-in-ie9
-					video.pause();
-					document.getElementById('videoSourceMP4').src = src + ".mp4";
-					document.getElementById('videoSourceWEBM').src = src + ".webm";
-					video.setAttribute('crossorigin', 'anonymous');
-					video.load();
-					playAndUpdateGUI();
-				}
-
-				function adjustVideoResolutionToWindowSize() {
-					var windowWidth = $(document).width();
-					if (windowWidth > 512) {
-						$('#mapLayers').multiselect('select', "high", true);
-					} else if (windowWidth > 256) {
-						$('#mapLayers').multiselect('select', "medium", true);
-					} else {
-						$('#mapLayers').multiselect('select', "low", true);
-					}
-				}
-
-
-				$('#mapLayers').multiselect({
-					buttonClass : 'btn btn-link',
-					dropRight : true,
-					buttonText : function(options, select) {
-						return "<i class='fa fa-bars'></i>";
-					},
-					buttonTitle : function(options, select) {
-						return "Map layers and movie resolution";
-					},
-					onChange : function(option, checked, select) {
-						var layerID,
-						    videoName = null,
-						    video,
-						    videoSource;
-						video = document.getElementById('video1');
-
-						// make sure one resolution is always selected
-						if (checked) {
-							switch ($(option).val()) {
-							case "xhigh":
-								$('#mapLayers').multiselect('deselect', ["high", "medium", "low"]);
-								videoName = "2048x1024";
-								break;
-							case "high":
-								$('#mapLayers').multiselect('deselect', ["xhigh", "medium", "low"]);
-								videoName = "1024x512";
-								break;
-							case "medium":
-								$('#mapLayers').multiselect('deselect', ["xhigh", "high", "low"]);
-								videoName = "512x256";
-								break;
-							case "low":
-								$('#mapLayers').multiselect('deselect', ["xhigh", "high", "medium"]);
-								videoName = "256x128";
-								break;
-							}
-						} else {
-							// checkbox for video resolution was delesected
-							switch ($(option).val()) {
-							case "xhigh":
-							case "high":
-							case "medium":
-							case "low":
-								adjustVideoResolutionToWindowSize();
-								return;
-							}
-						}
-						if (videoName !== null) {
-							changeVideoSource(videoName);
-						} else {
-							// change layer visibility
-							if (map !== undefined) {
-								layerID = $(option).val();
-								if (layerID === "land") {
-									map.setLayerVisibility("lakes", checked);
-								}
-								map.setLayerVisibility(layerID, checked);
-							}
-						}
-					}
-				});
-
-				adjustVideoResolutionToWindowSize();
-
-				$("#video1").on("timeupdate", function() {
-					var vid = document.getElementById('video1'),
-					// the duration of the video corresponds to 365 days
-					// note 364 to map from 0..1 to 1..365
-					    day = 1 + 364 * vid.currentTime / vid.duration;
-					day = Math.round(day);
-					// to draw the dial, call trigger(), which also triggers a
-					// release event. This would call release and change
-					// almost simultaneous when draggin which would create problems,
-					// so don't trigger an event while dragging the knob.
-					if (!$('#dial').data('videoPausedForDragging')) {
-						$('#dial').val(day).trigger('change');
-					}
-					updateDate(day);
-				});
-				updateDate(1);
-
-				$("#dial").knob({
-					height : 120,
-
-					'mousemove' : function(v) {
-						console.log("move");
-					},
-
-					// called when the mouse is released, but also when
-					// trigger() is called after each video timeupdate event
-					'release' : function(v) {
-						var vid = document.getElementById('video1');
-
-						if (vid.paused) {
-							// set video to new time
-							// not division by 364 to scale from 1..365 to 0..1
-							vid.currentTime = (v - 1) / 364 * vid.duration;
-							$('#dial').data('videoPausedForDragging', false);
-
-							// start video if pause button has not been pressed
-							if (!isPauseButtonPressed()) {
-								playAndUpdateGUI();
-							}
-						}
-					},
-
-					// called when the dial position is changed by the user
-					'change' : function(v) {
-						// don't play video while time is adjusted. The currentTime would
-						// have to be continuously adjusted while the user changes
-						// the dial, but video in Safari and maybe other browsers
-						// stops listening when too many commands are sent.
-						document.getElementById('video1').pause();
-						$('#dial').data('videoPausedForDragging', true);
-						updateDate(v);
-					},
-
-					'draw' : function() {
-						// "tron" case
-						if (this.$.data('skin') === 'tron') {
-
-							this.cursorExt = 0.3;
-
-							var a = this.arc(this.cv),
-							    pa,
-							    i,
-							    startAngle,
-							    endAngle,
-							    r = 1,
-							// radius of outter circle
-							    outterR = this.radius - this.lineWidth + 1 + this.lineWidth * 2 / 3,
-							// width of outter line
-							    outterLineWidth = 1.5;
-
-							// circle filling
-							this.g.beginPath();
-							this.g.arc(this.xy, this.xy, outterR - outterLineWidth / 2, 0, 2 * Math.PI, false);
-							this.g.fillStyle = "#222";
-							this.g.globalAlpha = "0.5";
-							this.g.fill();
-
-							// segmented outter circle
-							this.g.lineWidth = outterLineWidth;
-							this.g.globalAlpha = "1";
-							// increase line width if mouse is over the canvas
-							if ($("#dial").data("mouseover") === true) {
-								this.g.lineWidth *= 2.5;
-							}
-
-							this.g.strokeStyle = this.o.fgColor;
-							this.g.lineCap = 'butt';
-							for ( i = 0; i < 12; i = i + 1) {
-								this.g.beginPath();
-								startAngle = i / 12 * Math.PI * 2 + 1 / 180 * Math.PI;
-								endAngle = (i + 1) / 12 * Math.PI * 2 - 1 / 180 * Math.PI;
-								this.g.arc(this.xy, this.xy, outterR, startAngle, endAngle, false);
-								this.g.stroke();
-							}
-
-							// previous value arc
-							this.g.globalAlpha = "1";
-							this.g.lineWidth = this.lineWidth;
-							if (this.o.displayPrevious) {
-								pa = this.arc(this.v);
-								this.g.beginPath();
-								this.g.strokeStyle = this.pColor;
-								this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, pa.s, pa.e, pa.d);
-								this.g.stroke();
-							}
-
-							// value arc
-							this.g.beginPath();
-							this.g.strokeStyle = r ? this.o.fgColor : this.fgColor;
-							this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, a.s, a.e, a.d);
-							this.g.stroke();
-
-							return false;
-						}
-					}
-				});
-
-				// set flag if mouse is over dial control
-				$("#dialContainer").hover(function() {
-					$("#dial").data("mouseover", true);
-				}, function() {
-					$("#dial").data("mouseover", false);
-				});
-
-				// make heavily styled elements visible after they have been configured
-				$("#controlContainer").show();
-
-				// create the map
-				// use setTimeout to give the browser a chance to render the GUI before the data are loaded
-				setTimeout(function() {
-					var w = $("#adaptiveMap").width(),
-					    h = $("#adaptiveMap").height();
-					// for measuring FPS
-					// stats = new Stats();
-					// stats.setMode( 2 );
-					// document.getElementById("FPS").appendChild(stats.domElement);
-
-					map = new AdaptiveMap(document.getElementById('adaptiveMap'), w, h, null, projectionChangeListener /*, stats */);
-					map.setZoomFactor(INITIAL_MAP_ZOOM);
-					// map.setNumberOfTrianglesAlongEquator(1000);
-					map.setForwardRasterProjection(false);
-					map.setLayers(getLayers(map)[0]);
-					new MapEvents(map);
-					map.render(false);
-				}, 0);
-
-				// ************************
-
-				$('#infoButton').on("click", function(e) {
-					$('#infoContainer').toggle();
-					$('#startInfoContainer').hide();
-					$('#awardsContainer').hide();
-				});
-
-				$('#closeInfoButton').on("click", function(e) {
-					$('#infoContainer').hide();
-				});
-
-				$('#infoContainer').on("click", function(e) {
-					$('#infoContainer').hide();
-				});
-
-				$('#awardsButton').on("click", function(e) {
-					$('#awardsContainer').toggle();
-					$('#startInfoContainer').hide();
-					$('#infoContainer').hide();
-				});
-				
-				$('#closeAwardsButton').on("click", function(e) {
-					$('#awardsContainer').hide();
-				});
-
-				$('#pausePlayButton').on("click", function(e) {
-					togglePlayPause();
-				});
-
-				$("#volumeToggle").on("click", function() {
-					var vid = document.getElementById("video1");
-					vid.muted = !vid.muted;
-					$(this).toggleClass('fa-volume-off fa-volume-up');
-				});
-
-				// hide spinning wheel
-				$("#video1").on('canplaythrough', function() {
-					$("#spinningWheelContainer").hide();
-				});
-				$("#video1").on('playing', function() {
-					$("#spinningWheelContainer").hide();
-				});
-				$("#video1").on('seeked', function() {
-					$("#spinningWheelContainer").hide();
-				});
-				$("#video1").on('timeupdate', function() {
-					$("#spinningWheelContainer").hide();
-				});
-
-				// show spinning wheel
-				$("#video1").on('stalled', function() {
-					$("#spinningWheelContainer").show();
-				});
-
-				// change play button when video ends playing
-				$("#video1").on('ended', function() {
-					$('#pausePlayButton').removeClass('fa-pause');
-					$('#pausePlayButton').addClass('fa-play');
-					log("ended");
-				});
-
-				$(document).on("keypress", function(e) {
-					if (e.which === 32) {// space key
-						togglePlayPause();
-					}
-				});
-
-				$("#controlContainer").draggable({
-					handle : "#dateContainer",
-					containment : "#container",
-					scroll : false
-				});
-
-				$(".legend").draggable({
-					handle : ".colorRamp",
-					containment : "#container",
-					scroll : false
-				});
-
-				$(window).resize(function() {
-					map.resizeMap(window.innerWidth, window.innerHeight);
-					map.render(false);
-				});
-
-				// add a zoom slider
-				$(function() {
-					function action(event, ui) {
-						if (map !== undefined && Math.abs(ui.value / 100 - map.getZoomFactor()) > 0.01) {
-							map.setZoomFactor(ui.value / 100);
-						}
-					}
-
-
-					$("#zoom-slider").slider({
-						orientation : "vertical",
-						range : "min",
-						min : 40,
-						max : 150,
-						value : INITIAL_MAP_ZOOM * 100,
-						change : action,
-						slide : action
-					});
-				});
-
-				// fade out start info after a while, but not on iOS, where the user needs to tap to play video
-				if (isIOS === false) {
-					setTimeout(function() {
-						$("#startInfoContainer").fadeOut("slow", function() {
-							$("div.mydiv").remove();
-						});
-
-					}, 10000);
-				}
-
-				$('#closeStartInfoButton').on("click", function(e) {
-					$('#startInfoContainer').hide();
-				});
-
-				$('#startInfoContainer').on("click", function(e) {
-					$('#startInfoContainer').hide();
-					// video play must be started by user on iOS
-					if (isIOS) {
-						playAndUpdateGUI();
-					}
-				});
-			});
-		</script>
+		<link rel="stylesheet" href="NASA/NASA.css">
+		<script type="text/javascript" src="NASA/UI.js"></script>
 		<script src="NASA/jquery.knob.js"></script>
 
 	</head>
@@ -1055,125 +91,78 @@
 			</div>
 
 			<div id="startInfoContainer" class="panel">
-				<p id="ioSStartInfo">
-					Click play to start.
-					<br>
-					<i id="iOSStartButton" class="fa fa-play fa-fw" title="Start video map"></i>
+				<p class="mouse">
+					To navigate in time, click on the circle on the left.
 				</p>
-
-				<div id="infoForMouse">
-					<p>
-						To navigate in time, click on the circle on the left.
-					</p>
-					<p>
-						To adjust the center of the map, click and drag on the map.
-					</p>
-					<p>
-						To zoom in and out, use the scroll wheel or the slider on the right.
-					</p>
-				</div>
-				<div id="infoForTouch">
-					<p>
-						To navigate in time, tap on the circle on the left.
-					</p>
-					<p>
-						To zoom in and out, tap the slider on the right.
-					</p>
-				</div>
+				<p class="mouse">
+					To adjust the center of the map, click and drag on the map.
+				</p>
+				<p class="mouse">
+					To zoom in and out, use the scroll wheel or the slider on the right.
+				</p>
 				<p>
 					<i id="closeStartInfoButton" class="fa fa-times" title="close"></i>
 				</p>
 			</div>
 
-			<script type="text/javascript">
-				var isTouchDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-				if (isTouchDevice) {
-					document.getElementById("infoForMouse").style.display = 'none';
-					document.getElementById("infoForTouch").style.display = 'inline';
-				} else {
-					document.getElementById("infoForMouse").style.display = 'inline';
-					document.getElementById("infoForTouch").style.display = 'none';
-				}
-			</script>
-
 			<div id="infoContainer" class="panel">
-				<p>
-					<i id="awardsTitleIcon" class="fa fa-trophy fa-lg" title="Awards"></i>
+				<p class="mouse">
+					To navigate in time, click on the circle on the left.
 				</p>
 				<p class="mouse">
-					To navigate in time, click on the circle on the left.</br>
-					To adjust the center of the map, click and drag on the map.<br>
-					To zoom in and out, use the scroll wheel or the slider on the right.</br>
+					To adjust the center of the map, click and drag on the map.
+				</p>
+				<p class="mouse">
+					To zoom in and out, use the scroll wheel or the slider on the right.
+				</p>
+				<p class="mouse">
 					Double-click the map to zoom in.
 				</p>
 				<p>
-					Read our open access <a href="http://www.tandfonline.com/doi/full/10.1080/17445647.2016.1157323">article in the Journal of Maps</a> about interactive video maps and how this map was created. Read more on <a href="https://svs.gsfc.nasa.gov/goto?11719">nasa.gov</a> about the CO<sub>2</sub> model.
+					<a href="https://svs.gsfc.nasa.gov/goto?11719">Read more on nasa.gov</a> about this CO<sub>2</sub> video map.
 				</p>
 				<p>
 					<i id="closeInfoButton" class="fa fa-times" title="close"></i>
-					</br>
 				</p>
-				<p>
-					Interactive video map by Bernhard Jenny, Bojan Šavrič, Johannes Liem of the <a href="https://www.google.com/search?q=%http://cartography.oregonstate.edu&btnI=Im+Feeling+Lucky">Cartography and Geovisualization Group</a>, Oregon State University.
-				</p>
-				<p>
+				<p id="osu">
+					Interactive video map by the <a href="https://www.google.com/search?q=%http://cartography.oregonstate.edu&btnI=Im+Feeling+Lucky">Cartography and Geovisualization Group</a>, Oregon State University
+					<br/>
+					Bernhard Jenny, Bojan Šavrič, Johannes Liem
+					<br/>
+					<br/>
 					Video by NASA Goddard Space Flight Center
 					<br/>
 					William M. Putman (NASA), Kayvon Sharghi (USRA), Aaron E. Lepsch (ADNET Systems, Inc.), Patrick Lynch (Wyle Information Systems)
-				</p>
-				<p>
+					<br/>
+					<br/>
+					<i id="trophy" class="fa fa-trophy fa-lg" title="Awards"></i>
+					</br>
+					2016 <a href="https://www.nsf.gov/news/special_reports/scivis/winners_2016.jsp#interactive">U.S. National Science Foundation NSF: The Vizzies Visualization Challenge – Interactive</a>
+					</br>
+					2015 <a href="https://www.cartogis.org/awards/winners2014.php">CaGIS Map Design Competition: Interactive Digital</a>
+					</br>
+					2015 <a href="https://www.cartography.org.uk/default.asp?contentID=1169">Avenza Award for Electronic Mapping</a> Highly Commended (2nd place) by the British Cartographic Society
+					<br/>
+					<br/>
+					<a href="https://dx.doi.org/10.1080/17445647.2016.1157323">More information</a> about interactive video maps and how this map was created
+					<br/>
+					<br/>
 					Code on <a href="https://github.com/OSUCartography/adaptive-composite-map-projections">GitHub</a>
 					<br/>
-					This map projection shows all areas with correct relative size.
+					This map shows all areas with correct relative size.
 					<br/>
-					&copy; 27 Dec 2014, minor updates 8 Jan 2016, 19 Sep 2016, 11 Mar 2017.
+					&copy; 27 Dec 2014, minor update 8 Jan 2016
 				</p>
-			</div>
 
-			<div id="awardsContainer" class="panel">
-				<p>
-					<i id="awardsTitleIcon" class="fa fa-trophy fa-lg" title="Awards"></i>					
-					</br>
-					</br>
-					This video map has received the following awards:
-					</br>
-					<ul id="awardsList" class="fa-ul">
-						<li>
-							<i class="fa-li fa fa-trophy"></i> 2016 <a href="http://explore.tandfonline.com/cfp/est/tjom-best-map-2016">Best Map Award by the Journal of Maps</a>
-						</li>
-						<li>
-							<i class="fa-li fa fa-trophy"></i> 2016 <a href="https://www.nsf.gov/news/special_reports/scivis/winners_2016.jsp#interactive">U.S. National Science Foundation NSF: The Vizzies Visualization Challenge – Interactive</a>
-						</li>
-						<li>
-							<i class="fa-li fa fa-trophy"></i> 2015 <a href="http://www.cartogis.org/awards/winners2014.php">CaGIS Map Design Competition: Interactive Digital</a>
-						</li>
-						<li>
-							<i class="fa-li fa fa-trophy"></i> 2015 <a href="http://www.cartography.org.uk/default.asp?contentID=1169">Avenza Award for Electronic Mapping</a> Highly Commended (2nd place) by the British Cartographic Society
-						</li>
-					</ul>
-				</p>
-				<p>
-					<i id="closeAwardsButton" class="fa fa-times" title="close"></i>
-					</br>
-				</p>
-				<p>
-					Read our open access <a href="https://dx.doi.org/10.1080/17445647.2016.1157323">article in the Journal of Maps</a> about interactive video maps and how this map was created.
-				</p>
 			</div>
 
 			<div id="map-and-zoom-slider">
 				<div id="zoom-Slider-Container">
 					<div id="zoom-slider" title="Map zoom"></div>
-					<div class="buttonContainer">
-						<i id="infoButton" class="fa fa-info fa-fw" title="Map navigation and about this video map"></i>
+					<div id="infoButtonContainer">
+						<i id="infoButton" class="fa fa-info fa-fw" title="Map navigation and info about this map"></i>
 					</div>
-					<div class="buttonContainer">
-						<i id="awardsButton" class="fa fa-trophy fa-lg" title="Awards for this video map"></i>
-					</div>
-					<div class="buttonContainer">
-						<a href="http://dx.doi.org/10.1080/17445647.2016.1157323" target="_blank"><i id="paperButton" class="fa fa-book fa-fw" title="Open access article about this video map"></i></a>
-					</div>
-					<div class="buttonContainer" title="Show and hide map layers">
+					<div id="mapLayersButtonContainer" title="Show and hide map layers">
 						<select id="mapLayers" multiple="multiple">
 							<optgroup label="Map Layers">
 								<option value="land" selected="selected" title="">Coast & Lakes</option>
@@ -1377,8 +366,8 @@
 			</div>
 
 			<video id="video1" class="video" crossorigin="anonymous" preload="auto" autoplay >
-				<source id="videoSourceMP4" src="https://d2p916zd5jwnza.cloudfront.net/NASA/1024x512.mp4" type="video/mp4"/>
-				<source id="videoSourceWEBM" src="https://d2p916zd5jwnza.cloudfront.net/NASA/1024x512.webm" type="video/webm"/>
+				<source id="videoSourceMP4" src="NASA/1024x512.mp4" type="video/mp4"/>
+				<source id="videoSourceWEBM" src="NASA/1024x512.webm" type="video/webm"/>
 				Your browser does not support HTML5 video. Please use a recent version of Google Chrome.
 			</video>
 
