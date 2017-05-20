@@ -430,6 +430,11 @@ vec2 invTransformedLambertAzimuthalTransverse(in vec2 xy) {
     return vec2 (lon - PI / 2., asin(sinLat));
 }
 
+vec2 invLambertCylindricalTransverse(in vec2 xy) {
+    float r = sqrt(1. - xy.x * xy.x);
+    return vec2(atan(xy.x, (r * cos(xy.y))), asin(r * sin(xy.y)));
+}
+
 vec2 invAlbersConic(in vec2 xy) {
     xy.y = albersRho0 - xy.y;
     float rho = length(xy);
@@ -508,14 +513,15 @@ vec2 invProjection(in vec2 xy, in float projectionID) {
     if (projectionID == TRANSFORMED_LAMBERT_AZIMUTHAL_TRANSVERSE_ID) {
         return invTransformedLambertAzimuthalTransverse(xy); 
     }
-    
+    if (projectionID == LAMBERT_CYLINDRICAL_TRANSVERSE_ID) {
+        return invLambertCylindricalTransverse(xy);
+    }
+
     /*
      if (projectionID == EPSG_MERCATOR) {
      return mercator(lon, lat);
      }
-     if (projectionID == LAMBERT_CYLINDRICAL_TRANSVERSE_ID) {
-     return lambertCylindricalTransverse(lon, lat);
-     }
+     
      */
     
     // FIXME discard;
