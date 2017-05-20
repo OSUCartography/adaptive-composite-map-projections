@@ -442,6 +442,11 @@ vec2 invTransformedLambertAzimuthalTransverse(in vec2 xy) {
     return vec2 (lon - PI / 2., asin(sinLat));
 }
 
+vec2 invLambertCylindricalTransverse(in vec2 xy) {
+    float r = sqrt(1. - xy.x * xy.x);
+    return vec2(atan(xy.x, (r * cos(xy.y))), asin(r * sin(xy.y)));
+}
+
 vec2 invAlbersConic(in vec2 xy) {
     xy.y = albersRho0 - xy.y;
     float rho = length(xy);
@@ -487,49 +492,46 @@ vec2 invProjection(in vec2 xy, in float projectionID) {
     if (projectionID == TRANSFORMED_WAGNER_ID) {
         return invTransformedWagner(xy);
     }
-    else if (projectionID == EPSG_ROBINSON) {
+    if (projectionID == EPSG_ROBINSON) {
         return invRobinson(xy);
     }
-    else if (projectionID == NATURAL_EARTH_ID) {
+    if (projectionID == NATURAL_EARTH_ID) {
         return invNaturalEarth(xy);
     }
-    else if (projectionID == EPSG_GEOGRAPHIC) {
+    if (projectionID == EPSG_GEOGRAPHIC) {
         return invGeographic(xy);
     }
-    else if (projectionID == EPSG_SINUSOIDAL) {
+    if (projectionID == EPSG_SINUSOIDAL) {
         return invSinusoidal(xy);
     }
-    else if (projectionID == CANTERS1_ID) {
+    if (projectionID == CANTERS1_ID) {
         return invCanters1(xy);
     }
-    else if (projectionID == CANTERS2_ID) {
+    if (projectionID == CANTERS2_ID) {
         return invCanters2(xy);
     }
-    else if (projectionID == CYLINDRICAL_EQUAL_AREA_ID) {
+    if (projectionID == CYLINDRICAL_EQUAL_AREA_ID) {
         return invCylindricalEqualArea(xy);
     }
     
     // continental and regional scale projections
-    else if (projectionID == ALBERS_ID) {
+    if (projectionID == ALBERS_ID) {
         return invAlbersConic(xy);
     }
-    else if (projectionID == LAMBERT_AZIMUTHAL_NORTH_POLAR_ID) {
+    if (projectionID == LAMBERT_AZIMUTHAL_NORTH_POLAR_ID) {
         return invLambertAzimuthalNorthPolar(xy);
     }
-    else if (projectionID == LAMBERT_AZIMUTHAL_SOUTH_POLAR_ID) {
+    if (projectionID == LAMBERT_AZIMUTHAL_SOUTH_POLAR_ID) {
         return invLambertAzimuthalSouthPolar(xy);
     }
-    else if (projectionID == TRANSFORMED_LAMBERT_AZIMUTHAL_TRANSVERSE_ID){
+    if (projectionID == TRANSFORMED_LAMBERT_AZIMUTHAL_TRANSVERSE_ID){
         return invTransformedLambertAzimuthalTransverse(xy);
     }
-    else { // if (projectionID == EPSG_MERCATOR) {
-        return invMercator(xy);
+    if (projectionID == EPSG_LAMBERT_CYLINDRICAL_TRANSVERSE) {
+        return invLambertCylindricalTransverse(xy);
     }
-    /* FIXME
-     if (projectionID == EPSG_LAMBERT_CYLINDRICAL_TRANSVERSE) {
-     return lambertCylindricalTransverse(lon, lat);
-     }
-     */
+    // if (projectionID == EPSG_MERCATOR) {
+    return invMercator(xy);
 }
 
 vec2 invProjectionMix(in vec2 xy) {
