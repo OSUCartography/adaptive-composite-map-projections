@@ -22,6 +22,7 @@ precision mediump float;
 #define ALBERS_ID 11.
 #define LAMBERT_AZIMUTHAL_NORTH_POLAR_ID -2.
 #define LAMBERT_AZIMUTHAL_SOUTH_POLAR_ID -3.
+#define TRANSFORMED_LAMBERT_AZIMUTHAL_TRANSVERSE_ID -777.
 #define TRANSFORMED_WAGNER_ID 654267985.
 #define NATURAL_EARTH_ID 7259365.
 #define CANTERS1_ID 53287562.
@@ -423,6 +424,24 @@ vec2 invLambertAzimuthalSouthPolar(in vec2 xy) {
     return vec2 (lon, lat);
 }
 
+vec2 invTransformedLambertAzimuthalTransverse(in vec2 xy) {
+    // inverse transformed Lambert azimuthal
+    xy.x /=  wagnerCB;
+    xy.y /= -wagnerCA;
+    float z = sqrt(1. - 0.25 * (dot(xy, xy)));
+    float lon = atan(z * xy.y, 2. * z * z - 1.) / wagnerN;
+    float sinLat = z * xy.x / wagnerM;
+    float cosLat = sqrt(1. - sinLat * sinLat);
+    
+    // inverse transverse rotation
+    float cosLon = cos(lon);
+    // Synder 1987 Map Projections - A working manual, eq. 5-10b with alpha = 0
+    lon = atan(cosLat * sin(lon), -sinLat);
+    // Synder 1987 Map Projections - A working manual, eq. 5-9 with alpha = 0
+    sinLat = cosLat * cosLon;
+    return vec2 (lon - PI / 2., asin(sinLat));
+}
+
 vec2 invAlbersConic(in vec2 xy) {
     xy.y = albersRho0 - xy.y;
     float rho = length(xy);
@@ -499,7 +518,11 @@ vec2 invProjection(in vec2 xy, in float projectionID) {
     }
     else if (projectionID == LAMBERT_AZIMUTHAL_SOUTH_POLAR_ID) {
         return invLambertAzimuthalSouthPolar(xy);
-    } else { // if (projectionID == EPSG_MERCATOR) {
+    }
+    else if (projectionID == TRANSFORMED_LAMBERT_AZIMUTHAL_TRANSVERSE_ID){
+        return invTransformedLambertAzimuthalTransverse(xy);
+    }
+    else { // if (projectionID == EPSG_MERCATOR) {
         return invMercator(xy);
     }
     /* FIXME

@@ -1,4 +1,4 @@
-/* Build Time: May 20, 2017 09:47:10 PM */
+/* Build Time: May 20, 2017 10:57:31 PM */
 /*globals LambertCylindricalEqualArea, ProjectionFactory */
 function MapEvents(map) {"use strict";
 
@@ -8182,7 +8182,9 @@ function TransformedLambertAzimuthalTransverse() {
     };
 
     this.inverse = function (x, y, lonlat) {
-        var z, sinLat, cosLat, cosLon, lon, lat;
+        // code courtesy by Bojan Savric
+        
+        var z, sinLat, cosLat, cosLon, lon;
 
         // inverse transformed Lambert azimuthal
         x /= CB;
@@ -8742,5 +8744,5 @@ ShpError.ERROR_UNDEFINED = 0;
 // a 'no data' error is thrown when the byte array runs out of data.
 ShpError.ERROR_NODATA = 1;
 
-var adaptiveCompositeMapBuildTimeStamp = "May 20, 2017 09:47:10 PM";
+var adaptiveCompositeMapBuildTimeStamp = "May 20, 2017 10:57:31 PM";
 		
