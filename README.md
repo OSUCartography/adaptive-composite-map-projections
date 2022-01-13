@@ -1,11 +1,9 @@
 Adaptive Composite Map Projections
 ==================================
 
-Authors: [Cartography and Geovisualization Group, Oregon State University](http://cartography.oregonstate.edu)
+Authors: Bernie Jenny and various members of the Cartography and Geovisualization Group, Oregon State University
 
-[Example](http://cartography.oregonstate.edu/demos/AdaptiveCompositeMapProjections/)
-
-[More Information](http://cartography.oregonstate.edu/ScaleAdaptiveWebMapProjections.html)
+[Example](https://berniejenny.info/demos/AdaptiveCompositeMapProjections/)
 
 ## General Structure
 
